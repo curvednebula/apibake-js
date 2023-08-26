@@ -1,32 +1,75 @@
 import fs from 'fs';
-import { getEnabledCategories } from 'trace_events';
 import { debugLog, log } from './logger';
 const PDFDocument = require('pdfkit');
+
+interface TextStyle {
+  font?: FontFace;
+  fontSize?: number;
+  fillColor?: string;
+  indent?: number;
+  gapBefore?: number;
+  gapAfter?: number;
+}
+
+enum FontFace {
+  NORM = 0,
+  BOLD = 1,
+  ITALIC = 2,
+  BOLD_ITALIC = 3,
+};
 
 export class PdfWriter {
   private topRightText?: string;
   private doc;
 
   private docOutlines: any[] = [];
+  private styleStack: TextStyle[] = [];
+
+  private fonts = [
+    'Helvetica',
+    'Helvetica-Bold',
+    'Helvetica-Oblique',
+    'Helvetica-BoldOblique'
+  ];
+
+  private colorMain = 'black';
+  private colorAccent = 'blue';
+  private colorDisabled = 'grey';
+
+  private paraGap = 4;
+  private subHeaderGap = 6;
+  private headerGap = 8;
+
+  private baseStyle: TextStyle = {};
 
   constructor() {
     this.doc = new PDFDocument();
 
     const writeStream = fs.createWriteStream('output.pdf');
     this.doc.pipe(writeStream);
+
+    this.baseStyle = {
+      font: FontFace.NORM,
+      fontSize: 12,
+      fillColor: this.colorMain,
+      indent: this.doc.x,
+      gapBefore: 0,
+      gapAfter: 0,
+    };
   }
 
   newSection(name: string) {
     this.topRightText = name;
+    this.resetStyle();
     this.doc.addPage();
   }
 
   header(level: number, text: string, anchor?: string) {
     const doc = this.doc;
-    doc.text(' ', { lineGap: 16 });
-    doc.fontSize(18 - level * 2).fillColor('black');
-    doc.text(text, { lineGap: 16, destination: anchor });
-    doc.fontSize(12);
+
+    this.withStyle({ font: FontFace.NORM, fontSize: 18 - level * 2, gapBefore: this.headerGap + 2, gapAfter: this.headerGap }, () => {
+      doc.text(text, { destination: anchor });
+    });
 
     let newOutline;
     const outlinesLen = this.docOutlines.length;
@@ -59,43 +102,93 @@ export class PdfWriter {
   }
 
   subHeader(text: string) {
-    this.doc.fillColor('black').text(text, { fontSize: 16 });
+    this.withStyle({ font: FontFace.BOLD, fontSize: 12,  gapBefore: this.subHeaderGap + 2, gapAfter: this.subHeaderGap }, () => {
+      this.doc.text(text);
+    });
   }
 
   para(text: string) {
-    this.doc.fillColor('black').text(text, { fontSize: 12 });
+    this.withStyle({ gapBefore: this.paraGap + 2, gapAfter: this.paraGap }, () => {
+      this.doc.text(text);
+    });
   }
 
   dataField(fieldName: string, fieldType?: string, description?: string, typeAnchor?: string) {
     const doc = this.doc;
-    doc.fillColor('black').text(fieldName, { indent: 12, continued: true });
-    if (fieldType) {
-      doc.text(': ', { continued: true });
-      doc.fillColor('blue').text(fieldType, { goTo: typeAnchor, underline: typeAnchor ? true : false });
-    }
+    this.withStyle({ indent: 12 }, () => {
+      doc.text(fieldName, { continued: true });
+      if (fieldType) {
+        doc.text(': ', { continued: true });
+        this.withStyle({ fillColor: this.colorAccent }, () => {
+          doc.text(fieldType, { goTo: typeAnchor, underline: typeAnchor ? true : false });
+        });
+      }
+    });
   }
 
   schemaType(typeName: string) {
     const doc = this.doc;
-    doc.fillColor('black').text('Type: ', { continued: true });
-    doc.fillColor('blue').text(typeName);
+    doc.text('Type: ', { continued: true });
+    this.withStyle({ fillColor: this.colorAccent }, () => {
+      doc.text(typeName);
+    });
   }
 
   enumValues(values: string[]) {
-    const doc = this.doc;
-    doc.fillColor('black');
     values.forEach((value, index, array) => {
       const str = (index < array.length - 1) ? `${value}, ` : value;
       const continued = (index < array.length - 1) ? true : false;
-      doc.text(str, { fontSize: 12, continued });
+      this.doc.text(str, { continued });
     });
   }
 
   comment(text: string) {
-    this.doc.fillColor('grey').text(text, { fontSize: 12 });
+    this.withStyle({ fillColor: this.colorDisabled, indent: 12 }, () => {
+      this.para(text);
+    });
   }
 
   finish() {
     this.doc.end();
+  }
+
+  private setStyle(style: TextStyle) {
+    this.doc.font(this.fonts[style.font ?? 0]).fontSize(style.fontSize).fillColor(style.fillColor);
+  }
+
+  private resetStyle() {
+    this.styleStack = [];
+    this.setStyle(this.baseStyle);
+  }
+
+  private withStyle(style: TextStyle, fn: (style: TextStyle) => void) {
+    const pushedStyle = this.pushStyle(style);
+    this.doc.x = pushedStyle.indent;
+    this.doc.y += pushedStyle.gapBefore;
+    fn(pushedStyle);
+    this.doc.y += pushedStyle.gapAfter;
+    const popedStyle = this.popStyle();
+    this.doc.x = popedStyle.indent;
+  }
+
+  private pushStyle(style: TextStyle): TextStyle {
+    const mergedStyle = { ...this.currentStyle(), ...style};
+    mergedStyle.indent = (this.currentStyle().indent ?? 0) + (style.indent ?? 0); // nested indent
+    this.setStyle(mergedStyle);
+    this.styleStack.push(mergedStyle);
+    return mergedStyle;
+  }
+
+  private popStyle(): TextStyle {
+    this.styleStack.pop();
+    const style = this.currentStyle();
+    this.setStyle(style);
+    return style;
+  }
+
+  private currentStyle(): TextStyle {
+    return (this.styleStack.length > 0)
+      ? this.styleStack[this.styleStack.length-1]
+      : this.baseStyle;
   }
 }

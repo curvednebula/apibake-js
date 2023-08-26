@@ -106,7 +106,7 @@ export class OpenApiParser {
   private writePath(path: string, pathSpec: TJson) {
     Object.entries(pathSpec).forEach(([methodName, methodSpec]) => {
       const endpoint = `${methodName.toUpperCase()} ${path}`;
-      log(endpoint);
+      log(` - ${endpoint}`);
       this.doc.header(this.firstHeaderLevel + 1, endpoint);
       this.writeMethod(methodSpec);
     });
@@ -187,7 +187,7 @@ export class OpenApiParser {
     this.doc.header(headerLevel, 'Schemas');
 
     Object.entries(schemas).forEach (([key, value]) => {
-      log(key);
+      log(` - ${key}`);
       this.doc.header(headerLevel + 1, key, this.schemaAnchor(key));
       this.writeSchema(value);
     });
