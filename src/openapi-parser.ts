@@ -42,28 +42,28 @@ class _SchemaRef {
 }
 
 export class OpenApiParser {
-  private _doc: PdfWriter;
-  private _firstHeaderLevel = 0;
+  private doc: PdfWriter;
+  private firstHeaderLevel = 0;
 
-  private _spec: TJson = {}; // open api spec being processed
-  private _topHeader?: string;
+  private spec: TJson = {}; // open api spec being processed
+  private topHeader?: string;
 
   // when multiple API specs parsed into the same doc - merge all schemas into one section
-  private _mergeSchemasInOneSection: boolean;
-  private _schemas: TJson = {};
+  private mergeSchemasInOneSection: boolean;
+  private schemas: TJson = {};
 
   constructor(
     doc: PdfWriter,
     mergeSchemasInOneSection = false
   ) {
-    this._doc = doc;
-    this._mergeSchemasInOneSection = mergeSchemasInOneSection;
+    this.doc = doc;
+    this.mergeSchemasInOneSection = mergeSchemasInOneSection;
   }
 
-  writeToDoc(apiJson: string, header?: string) {
-    this._spec = JSON.parse(apiJson);
+  parse(apiJson: string, header?: string) {
+    this.spec = JSON.parse(apiJson);
 
-    const openapiVer = this._spec['openapi'] as string;
+    const openapiVer = this.spec['openapi'] as string;
     if (openapiVer == null) {
       throw Error('Invalid OpenAPI specification.');
     }
@@ -72,132 +72,133 @@ export class OpenApiParser {
       throw Error('Invalid OpenAPI version: $openapiVer, required 3.0.0+.');
     }
 
-    this._topHeader = header;
-    this._doc.topRightText = header;
+    this.topHeader = header;
+    this.doc.topRightText = header;
 
     if (header) {
-      this._doc.addHeader(this._firstHeaderLevel, header);
+      this.doc.addHeader(this.firstHeaderLevel, header);
     }
 
-    const paths = this._spec['paths'] as Record<string, any>;
+    const paths = this.spec['paths'] as Record<string, any>;
 
     if (Object.entries(paths).length > 0) {
       log('Endpoints:');
       Object.entries(paths).forEach(([key, value]) => {
-        this._writePath(key, value);
+        this.writePath(key, value);
       });
     }
     
-    const schemas = this._spec['components']?.['schemas'] as TJson;
+    const schemas = this.spec['components']?.['schemas'] as TJson;
 
     if (Object.entries(schemas).length > 0) {
-      if (this._mergeSchemasInOneSection) {
-        this._saveSchemasToParseLater(schemas);
+      if (this.mergeSchemasInOneSection) {
+        this.saveSchemasToParseLater(schemas);
       } else {
-        this._doc.addHeader(this._firstHeaderLevel + 1, 'Schemas');
-        this._writeSchemas(schemas);
+        this.doc.addHeader(this.firstHeaderLevel + 1, 'Schemas');
+        this.writeSchemas(schemas);
       }
     }
     
     // this._doc.flush();
   }
 
-  finalizeDoc() {
-    this._doc.topRightText = 'Schemas';
+  // if we parse multiple api spec files - done() shoud be called only once in the end
+  done() {
+    this.doc.topRightText = 'Schemas';
 
-    if (this._mergeSchemasInOneSection && Object.entries(this._schemas).length > 0) {
-      this._doc.addHeader(this._firstHeaderLevel, 'Schemas');
-      this._writeSchemas(this._schemas);
+    if (this.mergeSchemasInOneSection && Object.entries(this.schemas).length > 0) {
+      this.doc.addHeader(this.firstHeaderLevel, 'Schemas');
+      this.writeSchemas(this.schemas);
     }
-    this._doc.flush();
+    this.doc.flush();
   }
 
-  _writePath(path: string, pathSpec: TJson) {
+  private writePath(path: string, pathSpec: TJson) {
     Object.entries(pathSpec).forEach(([methodName, methodSpec]) => {
       const endpoint = `${methodName.toUpperCase()} ${path}`;
       log(endpoint);
-      this._doc.addHeader(this._firstHeaderLevel + 1, endpoint);
-      this._writeMethod(methodSpec);
+      this.doc.addHeader(this.firstHeaderLevel + 1, endpoint);
+      this.writeMethod(methodSpec);
     });
   }
 
-  _writeMethod(methodSpec: TJson) {
+  private writeMethod(methodSpec: TJson) {
     const parameters = methodSpec['parameters'] as TJson[];
 
     if (parameters && Object.keys(parameters).length > 0) {
-      this._doc.addSubHeader('Request Parameters:');
+      this.doc.addSubHeader('Request Parameters:');
 
       // TODO: for some reason sometimes there are duplicated parameters
       const uniqParams = parameters;
       uniqParams.forEach((param) => {
-        this._writeParameter(param);
+        this.writeParameter(param);
       });
     }
 
     const body = methodSpec['requestBody'];
 
     if (body && Object.keys(body).length > 0) {
-      this._doc.addSubHeader('Request Body:');
-      this._writeBody(body);
+      this.doc.addSubHeader('Request Body:');
+      this.writeBody(body);
     }
 
     const responses = methodSpec['responses'] as TJson;
     if (responses) {
       Object.entries(responses).forEach(([key, value]) => {
-        this._doc.addSubHeader(`Response ${key}:`);
-        this._writeBody(value);
+        this.doc.addSubHeader(`Response ${key}:`);
+        this.writeBody(value);
       });
     }
   }
 
-  _writeBody(bodySpec: TJson) {
+  private writeBody(bodySpec: TJson) {
     const descr = bodySpec['description'] as string;
     if (descr) {
-      this._doc.addComment(descr);
+      this.doc.addComment(descr);
     }
 
     const contentSpec = bodySpec['content'] as TJson;
     let emptyBody = true;
 
     if (contentSpec) {
-      const content = this._getFirstOf(contentSpec, ['application/json', 'multipart/form-data']);
+      const content = this.getFirstOf(contentSpec, ['application/json', 'multipart/form-data']);
 
       if (content) {
         const schemaRef = content.spec['schema'] as TJson;
         if (schemaRef) {
-          const schema = this._parseSchemaRef(schemaRef);
-          const schemaSpec = this._spec['components']?.['schemas']?.[schema.schemaName] as TJson;
-          this._writeSchema(schemaSpec, schema.text);
+          const schema = this.parseSchemaRef(schemaRef);
+          const schemaSpec = this.spec['components']?.['schemas']?.[schema.schemaName] as TJson;
+          this.writeSchema(schemaSpec, schema.text);
           emptyBody = false;
         }
       }
     }
     if (emptyBody) {
-      this._doc.addPara('Empty body.');
+      this.doc.addPara('Empty body.');
     }
   }
 
-  _saveSchemasToParseLater(schemas: TJson) {
+  private saveSchemasToParseLater(schemas: TJson) {
     Object.entries(schemas).forEach(([key, value]) => {
-      if (!this._schemas[key]) {
-        this._schemas[key] = value;
+      if (!this.schemas[key]) {
+        this.schemas[key] = value;
       } else {
         log(`!Duplicated schema: ${key}`);
       }
     });
   }
   
-  _writeSchemas(schemas: TJson) {
+  private writeSchemas(schemas: TJson) {
     log('Schemas:');
     Object.entries(schemas).forEach (([key, value]) => {
       log(key);
-      this._doc.addHeader(this._firstHeaderLevel + 2, key, this._schemaAnchor(key));
-      this._writeSchema(value);
+      this.doc.addHeader(this.firstHeaderLevel + 2, key, this.schemaAnchor(key));
+      this.writeSchema(value);
     });
   }
 
-  _writeSchema(schemaSpec?: TJson, name?: string) {
-    this._doc.addSchemaType(name ?? schemaSpec?.['type'] as string);
+  private writeSchema(schemaSpec?: TJson, name?: string) {
+    this.doc.addSchemaType(name ?? schemaSpec?.['type'] as string);
 
     if (schemaSpec == null) {
       return;
@@ -205,24 +206,24 @@ export class OpenApiParser {
 
     const properties = schemaSpec['properties'] as TJson;
     if (properties) {
-      this._doc.addPara('{');
+      this.doc.addPara('{');
 
       const required = schemaSpec['required'] as string[];
 
       Object.entries(properties).forEach(([key, value]) => {
-        const typeRef = this._parseSchemaRef(value);
-        this._writeVariable(key, typeRef, value['description'], required?.includes(key));
+        const typeRef = this.parseSchemaRef(value);
+        this.writeVariable(key, typeRef, value['description'], required?.includes(key));
       });
-      this._doc.addPara('}');
+      this.doc.addPara('}');
     }
     else if (schemaSpec['enum']) {
-      this._doc.addPara('Values:');
+      this.doc.addPara('Values:');
       const values = schemaSpec['enum'] as string[];
-      this._doc.addEnumValues(values);
+      this.doc.addEnumValues(values);
     }
   }
 
-  _schemaNameByRef(ref: string) {
+  private schemaNameByRef(ref: string) {
     const refPath = '#/components/schemas/';
     const start = ref.indexOf(refPath);
     if (start >= 0) {
@@ -231,50 +232,50 @@ export class OpenApiParser {
     return ref;
   }
 
-  _schemaDefinitionExists(name: string): boolean {
-    return (this._spec['components']?.['schemas']?.[name]) ? true : false;
+  private schemaDefinitionExists(name: string): boolean {
+    return (this.spec['components']?.['schemas']?.[name]) ? true : false;
   }
 
-  _schemaAnchor(schemaName: string): string {
-    return this._mergeSchemasInOneSection ?  `schemas: ${schemaName}` : `${this._topHeader}: ${schemaName}`;
+  private schemaAnchor(schemaName: string): string {
+    return this.mergeSchemasInOneSection ?  `schemas: ${schemaName}` : `${this.topHeader}: ${schemaName}`;
   }
 
-  _parseSchemaRef(schemaRef: TJson): _SchemaRef {
+  private parseSchemaRef(schemaRef: TJson): _SchemaRef {
     if (schemaRef['type']) {
       if (schemaRef['type'] === 'array' && schemaRef['items']) {
-        const typeRef = this._parseSchemaRef(schemaRef['items']);
+        const typeRef = this.parseSchemaRef(schemaRef['items']);
         return new _SchemaRef(`Array<${typeRef.text}>`, typeRef.schemaName, typeRef.anchor, true);
       } else {
         return new _SchemaRef(schemaRef['type'], schemaRef['type']);
       }
     } else if (schemaRef['\$ref']) {
-      const schemaName = this._schemaNameByRef(schemaRef['\$ref']);
-      const anchor = this._schemaDefinitionExists(schemaName) ? this._schemaAnchor(schemaName) : undefined;
+      const schemaName = this.schemaNameByRef(schemaRef['\$ref']);
+      const anchor = this.schemaDefinitionExists(schemaName) ? this.schemaAnchor(schemaName) : undefined;
       return new _SchemaRef(schemaName, schemaName, anchor);
     }
     return _SchemaRef.undefined();
   }
 
-  _writeParameter(paramSpec: TJson) {
+  private writeParameter(paramSpec: TJson) {
     if (paramSpec['name']) {  
       let typeRef: _SchemaRef | undefined = undefined;
 
       if (paramSpec['schema'] != null) {
-        typeRef = this._parseSchemaRef(paramSpec['schema']);
+        typeRef = this.parseSchemaRef(paramSpec['schema']);
       }
 
       if (typeRef === undefined || typeRef.isUndefined()) {
-        const leaf = this._getFirstOf(paramSpec, ['anyOf', 'allOf', 'oneOf']);
+        const leaf = this.getFirstOf(paramSpec, ['anyOf', 'allOf', 'oneOf']);
         // TODO: parse entire array of possible schemas
         if (leaf?.spec[0]) {
-          typeRef = this._parseSchemaRef(leaf?.spec[0]!);
+          typeRef = this.parseSchemaRef(leaf?.spec[0]!);
         }
       }
-      this._writeVariable(paramSpec['name'], typeRef, paramSpec['description'], paramSpec['required']);
+      this.writeVariable(paramSpec['name'], typeRef, paramSpec['description'], paramSpec['required']);
     }
   }
 
-  _getFirstOf(spec: TJson, children: string[]): _JsonLeaf | undefined {
+  private getFirstOf(spec: TJson, children: string[]): _JsonLeaf | undefined {
     for (const child of children) {
       if (spec[child]) {
         return { name: child, spec: spec[child] };
@@ -283,8 +284,8 @@ export class OpenApiParser {
     return undefined;
   }
 
-  _writeVariable(name: string, typeRef?: _SchemaRef, description?: string, required?: boolean) {
-    this._doc.addVariable(
+  private writeVariable(name: string, typeRef?: _SchemaRef, description?: string, required?: boolean) {
+    this.doc.addVariable(
       `${name}${(required ?? true) ? '':'?'}`, 
       typeRef?.text,
       description, 
