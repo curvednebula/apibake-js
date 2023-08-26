@@ -14,9 +14,12 @@ export class PdfWriter {
   }
 
   addHeader(level: number, text: string, anchor?: string) {
-    this.doc.text(' ', { fontSize: 20, lineGap: 20 });
-    this.doc.fillColor('black').text(text, { fontSize: 20, lineGap: 20, destination: anchor });
-    this.doc.outline.addItem(text);
+    const doc = this.doc;
+    doc.text(' ', { fontSize: 20, lineGap: 20 });
+    doc.fontSize(20).fillColor('black');
+    doc.text(text, { lineGap: 20, destination: anchor });
+    doc.fontSize(12);
+    doc.outline.addItem(text);
   }
 
   addSubHeader(text: string) {
@@ -31,11 +34,12 @@ export class PdfWriter {
     this.doc.text(text, { fontSize: 12 });
   }
 
-  addVariable(name: string, type?: string, description?: string, typeAnchor?: string) {
+  addVariable(varName: string, varType?: string, description?: string, typeAnchor?: string) {
     const doc = this.doc;
-    doc.fillColor('black').text(name, { fontSize: 12, continued: true });
-    if (type) {
-      doc.fillColor('blue').text(type, { fontSize: 12, goTo: typeAnchor, underline: typeAnchor ? true : false });
+    doc.fillColor('black').text(varName, { indent: 12, continued: true });
+    if (varType) {
+      doc.text(': ', { continued: true });
+      doc.fillColor('blue').text(varType, { goTo: typeAnchor, underline: typeAnchor ? true : false });
     }
   }
 
