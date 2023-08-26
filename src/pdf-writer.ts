@@ -1,9 +1,13 @@
 import fs from 'fs';
+import { getEnabledCategories } from 'trace_events';
+import { debugLog, log } from './logger';
 const PDFDocument = require('pdfkit');
 
 export class PdfWriter {
   private topRightText?: string;
   private doc;
+
+  private docOutlines: any[] = [];
 
   constructor() {
     this.doc = new PDFDocument();
@@ -20,10 +24,38 @@ export class PdfWriter {
   header(level: number, text: string, anchor?: string) {
     const doc = this.doc;
     doc.text(' ', { lineGap: 16 });
-    doc.fontSize(16).fillColor('black');
+    doc.fontSize(18 - level * 2).fillColor('black');
     doc.text(text, { lineGap: 16, destination: anchor });
     doc.fontSize(12);
-    doc.outline.addItem(text);
+
+    let newOutline;
+    const outlinesLen = this.docOutlines.length;
+    let headerLevelError = false;
+
+    // debugLog(`header: level=${level}, text="${text}"`);
+
+    if (level === 0) {
+      newOutline = doc.outline.addItem(text);
+    } else if (level > 0 && level <= outlinesLen) {
+      newOutline = this.docOutlines[level - 1].addItem(text);
+    } else {
+      headerLevelError = true;
+    }
+    
+    if (!headerLevelError) {
+      if (level === outlinesLen) {
+        this.docOutlines.push(newOutline);
+      } else if (level < outlinesLen) {
+        this.docOutlines[level] = newOutline;
+        this.docOutlines.splice(level + 1); // remore remainings
+      } else if (level > outlinesLen) {
+        headerLevelError = true;
+      }
+    }
+
+    if (headerLevelError) {
+      throw new Error(`A header can only be nested inside headers with level - 1. level=${level}, previousLevel=${outlinesLen-1}`);
+    }
   }
 
   subHeader(text: string) {

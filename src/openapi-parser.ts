@@ -1,3 +1,4 @@
+import { log } from './logger';
 import { PdfWriter } from './pdf-writer';
 
 type TJson = Record<string, any>;
@@ -5,10 +6,6 @@ type TJson = Record<string, any>;
 interface _JsonLeaf {
   name: string;
   spec: any;
-}
-
-const log = (str: string) => {
-  console.log(str);
 }
 
 class _SchemaRef {
@@ -60,7 +57,7 @@ export class OpenApiParser {
     this.mergeSchemasInOneSection = mergeSchemasInOneSection;
   }
 
-  parse(apiJson: string, header?: string) {
+  parse(apiJson: string, header: string) {
     this.spec = JSON.parse(apiJson);
 
     const openapiVer = this.spec['openapi'] as string;
@@ -73,11 +70,8 @@ export class OpenApiParser {
     }
 
     this.topHeader = header;
-    this.doc.newSection(header ?? '');
-
-    if (header) {
-      this.doc.header(this.firstHeaderLevel, header);
-    }
+    this.doc.newSection(this.topHeader);
+    this.doc.header(this.firstHeaderLevel, this.topHeader);
 
     const paths = this.spec['paths'] as Record<string, any>;
 
@@ -187,12 +181,14 @@ export class OpenApiParser {
   private writeSchemas(schemas: TJson) {
     log('Schemas:');
 
+    const headerLevel = this.mergeSchemasInOneSection ? this.firstHeaderLevel : this.firstHeaderLevel + 1;
+
     this.doc.newSection('Schemas');
-    this.doc.header(this.mergeSchemasInOneSection ? this.firstHeaderLevel : this.firstHeaderLevel + 1, 'Schemas');
+    this.doc.header(headerLevel, 'Schemas');
 
     Object.entries(schemas).forEach (([key, value]) => {
       log(key);
-      this.doc.header(this.firstHeaderLevel + 2, key, this.schemaAnchor(key));
+      this.doc.header(headerLevel + 1, key, this.schemaAnchor(key));
       this.writeSchema(value);
     });
   }
