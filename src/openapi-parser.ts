@@ -99,7 +99,7 @@ export class OpenApiParser {
       }
     }
     
-    this._doc.flush();
+    // this._doc.flush();
   }
 
   finalizeDoc() {
@@ -243,7 +243,7 @@ export class OpenApiParser {
     if (schemaRef['type']) {
       if (schemaRef['type'] === 'array' && schemaRef['items']) {
         const typeRef = this._parseSchemaRef(schemaRef['items']);
-        return new _SchemaRef('Array<${typeRef.text}>', typeRef.schemaName, typeRef.anchor, true);
+        return new _SchemaRef(`Array<${typeRef.text}>`, typeRef.schemaName, typeRef.anchor, true);
       } else {
         return new _SchemaRef(schemaRef['type'], schemaRef['type']);
       }

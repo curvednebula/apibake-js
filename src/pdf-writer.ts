@@ -15,7 +15,7 @@ export class PdfWriter {
 
   addHeader(level: number, text: string, anchor?: string) {
     this.doc.text(' ', { fontSize: 20, lineGap: 20 });
-    this.doc.fillColor('black').text(text, { fontSize: 20, lineGap: 20 });
+    this.doc.fillColor('black').text(text, { fontSize: 20, lineGap: 20, destination: anchor });
     this.doc.outline.addItem(text);
   }
 
@@ -31,11 +31,11 @@ export class PdfWriter {
     this.doc.text(text, { fontSize: 12 });
   }
 
-  addVariable(name: string, type?: string, description?: string, anchor?: string) {
+  addVariable(name: string, type?: string, description?: string, typeAnchor?: string) {
     const doc = this.doc;
-    doc.fillColor('blue').text(name, { fontSize: 12, continued: true });
+    doc.fillColor('black').text(name, { fontSize: 12, continued: true });
     if (type) {
-      doc.fillColor('grey').text(type, { fontSize: 12 });
+      doc.fillColor('blue').text(type, { fontSize: 12, goTo: typeAnchor, underline: typeAnchor ? true : false });
     }
   }
 
