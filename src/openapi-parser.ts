@@ -119,10 +119,13 @@ export class OpenApiParser {
       this.doc.subHeader('Request Parameters:');
 
       // TODO: for some reason sometimes there are duplicated parameters
+      this.doc.indentStart();
       const uniqParams = parameters;
       uniqParams.forEach((param) => {
         this.writeParameter(param);
       });
+      this.doc.indentEnd();
+      this.doc.lineBreak();
     }
 
     const body = methodSpec['requestBody'];
@@ -139,6 +142,7 @@ export class OpenApiParser {
         this.writeBody(value);
       });
     }
+    this.doc.lineBreak(2);
   }
 
   private writeBody(bodySpec: TJson) {
@@ -194,17 +198,25 @@ export class OpenApiParser {
   }
 
   private writeSchema(schemaSpec?: TJson, name?: string) {
+    
+
     const typeName = name ?? schemaSpec?.['type'] as string;
     if (typeName !== 'object') {
+      this.doc.indentStart();
       this.doc.schemaType(typeName);
+      this.doc.indentEnd();
     }
-    if (schemaSpec == null) {
+
+    if (!schemaSpec) {
+      this.doc.lineBreak();
       return;
     }
 
+    this.doc.indentStart();
+
     const properties = schemaSpec['properties'] as TJson;
     if (properties) {
-      this.doc.para('{');
+      this.doc.text('{').indentStart();
 
       const required = schemaSpec['required'] as string[];
 
@@ -212,13 +224,17 @@ export class OpenApiParser {
         const typeRef = this.parseSchemaRef(value);
         this.writeVariable(key, typeRef, value['description'], required?.includes(key));
       });
-      this.doc.para('}');
+      this.doc.indentEnd().text('}');
+      this.doc.lineBreak();
     }
     else if (schemaSpec['enum']) {
       this.doc.para('Values:');
       const values = schemaSpec['enum'] as string[];
       this.doc.enumValues(values);
     }
+
+    this.doc.indentEnd();
+    this.doc.lineBreak();
   }
 
   private schemaNameByRef(ref: string) {

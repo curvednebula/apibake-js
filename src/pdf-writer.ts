@@ -7,9 +7,10 @@ interface TextStyle {
   fontSize?: number;
   fillColor?: string;
   indent?: number;
-  gapBefore?: number;
-  gapAfter?: number;
+  lineGap?: number;
 }
+
+type TextOptions = Record<string, any>;
 
 enum FontFace {
   NORM = 0,
@@ -52,9 +53,8 @@ export class PdfWriter {
       font: FontFace.NORM,
       fontSize: 12,
       fillColor: this.colorMain,
-      indent: this.doc.x,
-      gapBefore: 0,
-      gapAfter: 0,
+      indent: 0,
+      lineGap: 0,
     };
   }
 
@@ -64,11 +64,18 @@ export class PdfWriter {
     this.doc.addPage();
   }
 
-  header(level: number, text: string, anchor?: string) {
+  text(str: string, options?: TextOptions): PdfWriter {
+    const style = this.currentStyle();
+    const styledOptions = { lineGap: style.lineGap, indent: style.indent, ...options };
+    this.doc.text(str, styledOptions);
+    return this;
+  }
+
+  header(level: number, str: string, anchor?: string) {
     const doc = this.doc;
 
-    this.withStyle({ font: FontFace.NORM, fontSize: 18 - level * 2, gapBefore: this.headerGap + 2, gapAfter: this.headerGap }, () => {
-      doc.text(text, { destination: anchor });
+    this.withStyle({ font: FontFace.NORM, fontSize: 18 - level * 2, lineGap: this.headerGap }, () => {
+      this.text(str, { destination: anchor });
     });
 
     let newOutline;
@@ -78,9 +85,9 @@ export class PdfWriter {
     // debugLog(`header: level=${level}, text="${text}"`);
 
     if (level === 0) {
-      newOutline = doc.outline.addItem(text);
+      newOutline = doc.outline.addItem(str);
     } else if (level > 0 && level <= outlinesLen) {
-      newOutline = this.docOutlines[level - 1].addItem(text);
+      newOutline = this.docOutlines[level - 1].addItem(str);
     } else {
       headerLevelError = true;
     }
@@ -101,36 +108,57 @@ export class PdfWriter {
     }
   }
 
-  subHeader(text: string) {
-    this.withStyle({ font: FontFace.BOLD, fontSize: 12,  gapBefore: this.subHeaderGap + 2, gapAfter: this.subHeaderGap }, () => {
-      this.doc.text(text);
+  subHeader(str: string) {
+    this.withStyle({ font: FontFace.BOLD, fontSize: 12,  lineGap: this.subHeaderGap }, () => {
+      this.text(str);
     });
   }
 
-  para(text: string) {
-    this.withStyle({ gapBefore: this.paraGap + 2, gapAfter: this.paraGap }, () => {
-      this.doc.text(text);
+  indentStart(): PdfWriter {
+    this.pushStyle({ indent: 12 });
+    return this;
+  }
+
+  indentEnd(): PdfWriter {
+    this.popStyle();
+    return this;
+  }
+
+  lineBreak(n: number = 1): PdfWriter {
+    this.doc.moveDown(n);
+    return this;
+  }
+
+  para(str: string): PdfWriter {
+    this.withStyle({ lineGap: this.paraGap }, () => {
+      this.text(str);
+    });
+    return this;
+  }
+
+  comment(str: string, options?: TextOptions) {
+    this.withStyle({ fillColor: this.colorDisabled }, () => {
+      this.text(str, options);
     });
   }
 
   dataField(fieldName: string, fieldType?: string, description?: string, typeAnchor?: string) {
-    const doc = this.doc;
-    this.withStyle({ indent: 12 }, () => {
-      doc.text(fieldName, { continued: true });
-      if (fieldType) {
-        doc.text(': ', { continued: true });
-        this.withStyle({ fillColor: this.colorAccent }, () => {
-          doc.text(fieldType, { goTo: typeAnchor, underline: typeAnchor ? true : false });
-        });
+    this.text(fieldName, { continued: true });
+    if (fieldType) {
+      this.text(': ', { continued: true });
+      this.withStyle({ fillColor: this.colorAccent }, () => {
+        this.text(fieldType, { goTo: typeAnchor, underline: typeAnchor ? true : false, continued: description ? true : false });
+      });
+      if (description) {
+        this.comment(`  // ${description}`, { goTo: null, underline: false });
       }
-    });
+    }
   }
 
   schemaType(typeName: string) {
-    const doc = this.doc;
-    doc.text('Type: ', { continued: true });
+    this.text('Type: ', { continued: true });
     this.withStyle({ fillColor: this.colorAccent }, () => {
-      doc.text(typeName);
+      this.text(typeName);
     });
   }
 
@@ -138,13 +166,7 @@ export class PdfWriter {
     values.forEach((value, index, array) => {
       const str = (index < array.length - 1) ? `${value}, ` : value;
       const continued = (index < array.length - 1) ? true : false;
-      this.doc.text(str, { continued });
-    });
-  }
-
-  comment(text: string) {
-    this.withStyle({ fillColor: this.colorDisabled, indent: 12 }, () => {
-      this.para(text);
+      this.text(str, { continued });
     });
   }
 
@@ -162,28 +184,33 @@ export class PdfWriter {
   }
 
   private withStyle(style: TextStyle, fn: (style: TextStyle) => void) {
-    const pushedStyle = this.pushStyle(style);
-    this.doc.x = pushedStyle.indent;
-    this.doc.y += pushedStyle.gapBefore;
-    fn(pushedStyle);
-    this.doc.y += pushedStyle.gapAfter;
-    const popedStyle = this.popStyle();
-    this.doc.x = popedStyle.indent;
+    const newStyle = this.pushStyle(style);
+    fn(newStyle);
+    this.popStyle();
   }
 
   private pushStyle(style: TextStyle): TextStyle {
-    const mergedStyle = { ...this.currentStyle(), ...style};
+    const mergedStyle = { ...this.currentStyle(), ...style };
     mergedStyle.indent = (this.currentStyle().indent ?? 0) + (style.indent ?? 0); // nested indent
     this.setStyle(mergedStyle);
+    // this.doc.x = mergedStyle.indent;
+    // if (!mergedStyle.continued) {
+    //   this.doc.y += mergedStyle.lineGap;
+    // }
     this.styleStack.push(mergedStyle);
     return mergedStyle;
   }
 
   private popStyle(): TextStyle {
-    this.styleStack.pop();
     const style = this.currentStyle();
-    this.setStyle(style);
-    return style;
+    // if (!style.continued) {
+    //   this.doc.y += style.lineGap;
+    // }
+    this.styleStack.pop();
+    const prevStyle = this.currentStyle();
+    this.setStyle(prevStyle);
+    // this.doc.x = prevStyle.indent;
+    return prevStyle;
   }
 
   private currentStyle(): TextStyle {
