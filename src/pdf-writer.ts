@@ -12,9 +12,11 @@ interface TextStyle {
 
 interface TextOptions {
   continued?: boolean;
+  lineBreak?: boolean;
+  underline?: boolean;
   destination?: string;
   goTo?: string | null;
-  underline?: boolean;
+  align?: string;
   x?: number;
   y?: number;
 };
@@ -29,6 +31,7 @@ enum FontFace {
 export class PdfWriter {
   private topRightText: string = '';
   private doc;
+  private pageNumber = 0;
 
   private docOutlines: any[] = [];
   private styleStack: TextStyle[] = [];
@@ -52,6 +55,7 @@ export class PdfWriter {
 
   constructor(outputFilePath: string) {
     this.doc = new PDFDocument();
+    // this.doc.page.width;
 
     const writeStream = fs.createWriteStream(outputFilePath);
     this.doc.pipe(writeStream);
@@ -75,9 +79,15 @@ export class PdfWriter {
   text(str: string, options?: TextOptions): PdfWriter {
     const style = this.currentStyle();
     const styledOpt = { lineGap: style.lineGap, indent: style.indent, ...options };
+    
+    const absolutePos = styledOpt.x !== undefined || styledOpt.y !== undefined;
+    if (absolutePos) {
+      delete styledOpt.indent; // when absolute coordinates - ignore indent
+    }
 
-    if (styledOpt.x !== undefined || styledOpt.y !== undefined) {
-      styledOpt.indent = 0; // when absolute coordinates specified ignore indent
+    debugLog(`text: ${str}, options: ${JSON.stringify(styledOpt)}`);
+
+    if (absolutePos) {
       this.doc.text(str, styledOpt.x ?? this.doc.x, styledOpt.y ?? this.doc.y, styledOpt);
     } else {
       this.doc.text(str, styledOpt);
@@ -156,16 +166,22 @@ export class PdfWriter {
     });
   }
 
-  dataField(fieldName: string, fieldType?: string, description?: string, typeAnchor?: string) {
-    this.text(fieldName, { continued: true });
-    if (fieldType) {
+  dataField(name: string, type?: string, description?: string, typeAnchor?: string) {
+    this.text(name, { continued: (type || description) ? true : false });
+
+    if (type) {
       this.text(': ', { continued: true });
       this.withStyle({ fillColor: this.colorAccent }, () => {
-        this.text(fieldType, { goTo: typeAnchor, underline: typeAnchor ? true : false, continued: description ? true : false });
+        this.text(type, { 
+          goTo: typeAnchor, 
+          underline: typeAnchor ? true : false,
+          continued: description ? true : false 
+        });
       });
-      if (description) {
-        this.comment(`  // ${description}`, { goTo: null, underline: false });
-      }
+    }
+
+    if (description) {
+      this.comment(`  // ${description}`, { goTo: null, underline: false });
     }
   }
 
@@ -189,15 +205,23 @@ export class PdfWriter {
   }
 
   private onNewPageAdded() {
-    const x = this.doc.x;
-    const y = this.doc.y;
+    this.pageNumber++;
+
+    const origBottom = this.doc.page.margins.bottom;
+    const origX = this.doc.x;
+    const origY = this.doc.y;
+    this.doc.page.margins.bottom = 0;
+
     if (this.topRightText) {
-      this.withStyle({ font: FontFace.NORM, fontSize: 8, fillColor: this.colorDisabled }, () => {
-        this.text(this.topRightText, { x: 50, y: 20 });
+      this.withStyle({ font: FontFace.NORM, fontSize: 9, fillColor: this.colorDisabled }, () => {
+        this.text(this.topRightText, { y: 30, align: 'right' });
+        this.text(`Page ${this.pageNumber}`, { y: this.doc.page.height - 40, align: 'right' });
       });
     }
-    this.doc.x = x;
-    this.doc.y = y;
+    // Reset text writer position
+    this.doc.x = origX;
+    this.doc.y = origY;
+    this.doc.page.margins.bottom = origBottom;
   }
 
   private setStyle(style: TextStyle) {

@@ -201,7 +201,7 @@ export class OpenApiParser {
     });
   }
 
-  private writeSchema(schemaSpec?: TJson, name?: string) { 
+  private writeSchema(schemaSpec?: TJson, name?: string) {
     const typeName = name ?? schemaSpec?.['type'] as string;
     if (typeName !== 'object') {
       this.doc.schemaType(typeName);
