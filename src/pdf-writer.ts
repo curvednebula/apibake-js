@@ -193,23 +193,14 @@ export class PdfWriter {
     const mergedStyle = { ...this.currentStyle(), ...style };
     mergedStyle.indent = (this.currentStyle().indent ?? 0) + (style.indent ?? 0); // nested indent
     this.setStyle(mergedStyle);
-    // this.doc.x = mergedStyle.indent;
-    // if (!mergedStyle.continued) {
-    //   this.doc.y += mergedStyle.lineGap;
-    // }
     this.styleStack.push(mergedStyle);
     return mergedStyle;
   }
 
   private popStyle(): TextStyle {
-    const style = this.currentStyle();
-    // if (!style.continued) {
-    //   this.doc.y += style.lineGap;
-    // }
     this.styleStack.pop();
     const prevStyle = this.currentStyle();
     this.setStyle(prevStyle);
-    // this.doc.x = prevStyle.indent;
     return prevStyle;
   }
 
