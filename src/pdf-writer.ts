@@ -43,10 +43,10 @@ export class PdfWriter {
 
   private baseStyle: TextStyle = {};
 
-  constructor() {
+  constructor(outputFilePath: string) {
     this.doc = new PDFDocument();
 
-    const writeStream = fs.createWriteStream('output.pdf');
+    const writeStream = fs.createWriteStream(outputFilePath);
     this.doc.pipe(writeStream);
 
     this.baseStyle = {
