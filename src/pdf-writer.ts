@@ -29,8 +29,12 @@ enum FontFace {
 };
 
 export class PdfWriter {
-  private topRightText: string = '';
   private doc;
+
+  private currentSectionName = '';
+
+  private pageNumber = 0;
+  private pageHeaderNodes: string[] = []; 
 
   private docOutlines: any[] = [];
   private styleStack: TextStyle[] = [];
@@ -60,7 +64,11 @@ export class PdfWriter {
 
     // NOTE: it is impossible to edit pages in pageAdded as it is sometimes invoked after one text already placed on the page
     // which produces unexpected formatting issues
-    // this.doc.on('pageAdded', () => this.onNewPageAdded());
+    this.pageHeaderNodes.push(''); // title page doesn't have header note
+    this.doc.on('pageAdded', () => {
+      this.pageNumber++;
+      this.pageHeaderNodes.push(this.currentSectionName);
+    });
 
     this.baseStyle = {
       font: FontFace.NORM,
@@ -72,7 +80,7 @@ export class PdfWriter {
   }
 
   newSection(name: string) {
-    this.topRightText = name;
+    this.currentSectionName = name;
     this.resetStyle();
     this.doc.addPage();
   }
@@ -216,9 +224,9 @@ export class PdfWriter {
 
       if (i > 0) {
         this.withStyle({ font: FontFace.NORM, fontSize: 9, fillColor: this.colorDisabled }, () => {
-          // header
-          this.text(this.topRightText, { y: origTop / 2, align: 'right' });
-          // footer
+          if (this.pageHeaderNodes[i]) {
+            this.text(this.pageHeaderNodes[i], { y: origTop / 2, align: 'right' });
+          }
           this.text(`Page ${i} / ${pages.count}`, { y: this.doc.page.height - origBottom / 2, align: 'right' });
         });
       }
