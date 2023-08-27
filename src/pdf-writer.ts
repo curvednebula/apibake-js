@@ -31,7 +31,6 @@ enum FontFace {
 export class PdfWriter {
   private topRightText: string = '';
   private doc;
-  private pageNumber = 0;
 
   private docOutlines: any[] = [];
   private styleStack: TextStyle[] = [];
@@ -54,12 +53,14 @@ export class PdfWriter {
   private baseStyle: TextStyle = {};
 
   constructor(outputFilePath: string) {
-    this.doc = new PDFDocument();
-    // this.doc.page.width;
+    this.doc = new PDFDocument({ bufferPages: true });
 
     const writeStream = fs.createWriteStream(outputFilePath);
     this.doc.pipe(writeStream);
-    this.doc.on('pageAdded', () => this.onNewPageAdded());
+
+    // NOTE: it is impossible to edit pages in pageAdded as it is sometimes invoked after one text already placed on the page
+    // which produces unexpected formatting issues
+    // this.doc.on('pageAdded', () => this.onNewPageAdded());
 
     this.baseStyle = {
       font: FontFace.NORM,
@@ -201,27 +202,32 @@ export class PdfWriter {
   }
 
   finish() {
-    this.doc.end();
-  }
+    const doc = this.doc;
 
-  private onNewPageAdded() {
-    this.pageNumber++;
+    // Add headers and footers to all pages
+    let pages = doc.bufferedPageRange();
 
-    const origBottom = this.doc.page.margins.bottom;
-    const origX = this.doc.x;
-    const origY = this.doc.y;
-    this.doc.page.margins.bottom = 0;
+    for (let i = 0; i < pages.count; i++) {
+      doc.switchToPage(i);
+      const origTop = this.doc.page.margins.top;
+      const origBottom = this.doc.page.margins.bottom;
+      doc.page.margins.top = 0;
+      doc.page.margins.bottom = 0;
 
-    if (this.topRightText) {
-      this.withStyle({ font: FontFace.NORM, fontSize: 9, fillColor: this.colorDisabled }, () => {
-        this.text(this.topRightText, { y: 30, align: 'right' });
-        this.text(`Page ${this.pageNumber}`, { y: this.doc.page.height - 40, align: 'right' });
-      });
+      if (i > 0) {
+        this.withStyle({ font: FontFace.NORM, fontSize: 9, fillColor: this.colorDisabled }, () => {
+          // header
+          this.text(this.topRightText, { y: origTop / 2, align: 'right' });
+          // footer
+          this.text(`Page ${i} / ${pages.count}`, { y: this.doc.page.height - origBottom / 2, align: 'right' });
+        });
+      }
+      
+      doc.page.margins.top = origTop;
+      doc.page.margins.bottom = origBottom;
     }
-    // Reset text writer position
-    this.doc.x = origX;
-    this.doc.y = origY;
-    this.doc.page.margins.bottom = origBottom;
+
+    doc.end();
   }
 
   private setStyle(style: TextStyle) {
