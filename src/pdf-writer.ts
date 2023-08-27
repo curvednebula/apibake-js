@@ -64,8 +64,8 @@ export class PdfWriter {
 
     // NOTE: it is impossible to edit pages in pageAdded as it is sometimes invoked after one text already placed on the page
     // which produces unexpected formatting issues
-    this.pageHeaderNodes.push(''); // title page doesn't have header note
     this.doc.on('pageAdded', () => {
+      // debugLog(`Page: ${this.pageNumber}, headerNote: ${this.currentSectionName}`);
       this.pageNumber++;
       this.pageHeaderNodes.push(this.currentSectionName);
     });
@@ -81,6 +81,8 @@ export class PdfWriter {
 
   addTitlePage(title: string, subtitle: string) {
     this.doc.addPage();
+    this.header(0, title);
+    this.header(1, subtitle);
   }
 
   newSection(name: string) {
