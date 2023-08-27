@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import fs from 'fs';
 import { OpenApiParser } from './openapi-parser';
 import { PdfWriter } from './pdf-writer';
@@ -22,8 +23,6 @@ const argsRest: string[] = [];
 
 const parseArgs = () => {
   const rawArgs = process.argv.slice(2);
-
-  log(`Args: ${rawArgs}`);
 
   for (let i=0; i<rawArgs.length; i++) {
     const arg = rawArgs[i];

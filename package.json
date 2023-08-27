@@ -1,8 +1,11 @@
 {
-  "name": "api-doc-baker",
+  "name": "apibake",
   "version": "1.0.0",
   "description": "OpenAPI to PDF",
   "main": "index.js",
+  "bin": {
+    "apibake": "./dist/index.js"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "ts-node ./src/index.ts",
