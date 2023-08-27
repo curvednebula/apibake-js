@@ -10,7 +10,14 @@ interface TextStyle {
   lineGap?: number;
 }
 
-type TextOptions = Record<string, any>;
+interface TextOptions {
+  continued?: boolean;
+  destination?: string;
+  goTo?: string | null;
+  underline?: boolean;
+  x?: number;
+  y?: number;
+};
 
 enum FontFace {
   NORM = 0,
@@ -20,7 +27,7 @@ enum FontFace {
 };
 
 export class PdfWriter {
-  private topRightText?: string;
+  private topRightText: string = '';
   private doc;
 
   private docOutlines: any[] = [];
@@ -67,8 +74,14 @@ export class PdfWriter {
 
   text(str: string, options?: TextOptions): PdfWriter {
     const style = this.currentStyle();
-    const styledOptions = { lineGap: style.lineGap, indent: style.indent, ...options };
-    this.doc.text(str, styledOptions);
+    const styledOpt = { lineGap: style.lineGap, indent: style.indent, ...options };
+
+    if (styledOpt.x !== undefined || styledOpt.y !== undefined) {
+      styledOpt.indent = 0; // when absolute coordinates specified ignore indent
+      this.doc.text(str, styledOpt.x ?? this.doc.x, styledOpt.y ?? this.doc.y, styledOpt);
+    } else {
+      this.doc.text(str, styledOpt);
+    }
     return this;
   }
 
@@ -175,10 +188,16 @@ export class PdfWriter {
     this.doc.end();
   }
 
-  private onNewPageAdded() { 
-    // if (this.topRightText) { 
-    //   this.doc.text(this.topRightText, 50, 50);
-    // }
+  private onNewPageAdded() {
+    const x = this.doc.x;
+    const y = this.doc.y;
+    if (this.topRightText) {
+      this.withStyle({ font: FontFace.NORM, fontSize: 8, fillColor: this.colorDisabled }, () => {
+        this.text(this.topRightText, { x: 50, y: 20 });
+      });
+    }
+    this.doc.x = x;
+    this.doc.y = y;
   }
 
   private setStyle(style: TextStyle) {

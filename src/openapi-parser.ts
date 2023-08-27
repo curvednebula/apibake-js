@@ -132,14 +132,18 @@ export class OpenApiParser {
 
     if (body && Object.keys(body).length > 0) {
       this.doc.subHeader('Request Body:');
+      this.doc.indentStart();
       this.writeBody(body);
+      this.doc.indentEnd();
     }
 
     const responses = methodSpec['responses'] as TJson;
     if (responses) {
       Object.entries(responses).forEach(([key, value]) => {
         this.doc.subHeader(`Response ${key}:`);
+        this.doc.indentStart();
         this.writeBody(value);
+        this.doc.indentEnd();
       });
     }
     this.doc.lineBreak(2);
@@ -197,22 +201,16 @@ export class OpenApiParser {
     });
   }
 
-  private writeSchema(schemaSpec?: TJson, name?: string) {
-    
-
+  private writeSchema(schemaSpec?: TJson, name?: string) { 
     const typeName = name ?? schemaSpec?.['type'] as string;
     if (typeName !== 'object') {
-      this.doc.indentStart();
       this.doc.schemaType(typeName);
-      this.doc.indentEnd();
     }
 
     if (!schemaSpec) {
       this.doc.lineBreak();
       return;
     }
-
-    this.doc.indentStart();
 
     const properties = schemaSpec['properties'] as TJson;
     if (properties) {
@@ -233,7 +231,6 @@ export class OpenApiParser {
       this.doc.enumValues(values);
     }
 
-    this.doc.indentEnd();
     this.doc.lineBreak();
   }
 
