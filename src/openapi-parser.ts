@@ -109,6 +109,7 @@ export class OpenApiParser {
       log(` - ${endpoint}`);
       this.doc.header(this.firstHeaderLevel + 1, endpoint);
       this.writeMethod(methodSpec);
+      this.doc.lineBreak(2);
     });
   }
 
@@ -146,7 +147,6 @@ export class OpenApiParser {
         this.doc.indentEnd();
       });
     }
-    this.doc.lineBreak(2);
   }
 
   private writeBody(bodySpec: TJson) {
@@ -175,6 +175,7 @@ export class OpenApiParser {
     if (emptyBody) {
       this.doc.para('Empty body.');
     }
+    this.doc.lineBreak();
   }
 
   private saveSchemasToParseLater(schemas: TJson) {
@@ -199,6 +200,7 @@ export class OpenApiParser {
       log(` - ${key}`);
       this.doc.header(headerLevel + 1, key, this.schemaAnchor(key));
       this.writeSchema(value);
+      this.doc.lineBreak(2);
     });
   }
 
@@ -209,7 +211,6 @@ export class OpenApiParser {
     }
 
     if (!schemaSpec) {
-      this.doc.lineBreak();
       return;
     }
 
@@ -224,15 +225,12 @@ export class OpenApiParser {
         this.writeVariable(key, typeRef, value['description'], required?.includes(key));
       });
       this.doc.indentEnd().text('}');
-      this.doc.lineBreak();
     }
     else if (schemaSpec['enum']) {
-      this.doc.para('Values:');
+      this.doc.lineBreak(0.5);
       const values = schemaSpec['enum'] as string[];
       this.doc.enumValues(values);
     }
-
-    this.doc.lineBreak();
   }
 
   private schemaNameByRef(ref: string) {

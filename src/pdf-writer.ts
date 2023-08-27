@@ -3,7 +3,7 @@ import { debugLog, log } from './logger';
 const PDFDocument = require('pdfkit');
 
 interface TextStyle {
-  font?: FontFace;
+  font?: EFont;
   fontSize?: number;
   fillColor?: string;
   indent?: number;
@@ -21,7 +21,7 @@ interface TextOptions {
   y?: number;
 };
 
-enum FontFace {
+enum EFont {
   NORM = 0,
   BOLD = 1,
   ITALIC = 2,
@@ -52,7 +52,7 @@ export class PdfWriter {
 
   private paraGap = 4;
   private subHeaderGap = 6;
-  private headerGap = 8;
+  private headerGap = 16;
 
   private baseStyle: TextStyle = {};
 
@@ -71,7 +71,7 @@ export class PdfWriter {
     });
 
     this.baseStyle = {
-      font: FontFace.NORM,
+      font: EFont.NORM,
       fontSize: 12,
       fillColor: this.colorMain,
       indent: 0,
@@ -107,7 +107,7 @@ export class PdfWriter {
   header(level: number, str: string, anchor?: string) {
     const doc = this.doc;
 
-    this.withStyle({ font: FontFace.NORM, fontSize: 18 - level * 2, lineGap: this.headerGap }, () => {
+    this.withStyle({ font: EFont.BOLD, fontSize: 16 - level * 2, lineGap: this.headerGap - level * 3 }, () => {
       this.text(str, { destination: anchor });
     });
 
@@ -142,7 +142,7 @@ export class PdfWriter {
   }
 
   subHeader(str: string) {
-    this.withStyle({ font: FontFace.BOLD, fontSize: 12,  lineGap: this.subHeaderGap }, () => {
+    this.withStyle({ font: EFont.BOLD, fontSize: 12,  lineGap: this.subHeaderGap }, () => {
       this.text(str);
     });
   }
@@ -202,6 +202,7 @@ export class PdfWriter {
   }
 
   enumValues(values: string[]) {
+    this.text('Values: ', { continued: true });
     values.forEach((value, index, array) => {
       const str = (index < array.length - 1) ? `${value}, ` : value;
       const continued = (index < array.length - 1) ? true : false;
@@ -223,7 +224,7 @@ export class PdfWriter {
       doc.page.margins.bottom = 0;
 
       if (i > 0) {
-        this.withStyle({ font: FontFace.NORM, fontSize: 9, fillColor: this.colorDisabled }, () => {
+        this.withStyle({ font: EFont.NORM, fontSize: 9, fillColor: this.colorDisabled }, () => {
           if (this.pageHeaderNodes[i]) {
             this.text(this.pageHeaderNodes[i], { y: origTop / 2, align: 'right' });
           }
