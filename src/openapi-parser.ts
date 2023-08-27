@@ -153,6 +153,7 @@ export class OpenApiParser {
     const descr = bodySpec['description'] as string;
     if (descr) {
       this.doc.comment(descr);
+      this.doc.lineBreak(0.5);
     }
 
     const contentSpec = bodySpec['content'] as TJson;

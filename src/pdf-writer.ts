@@ -94,7 +94,7 @@ export class PdfWriter {
       delete styledOpt.indent; // when absolute coordinates - ignore indent
     }
 
-    debugLog(`text: ${str}, options: ${JSON.stringify(styledOpt)}`);
+    // debugLog(`text: ${str}, options: ${JSON.stringify(styledOpt)}`);
 
     if (absolutePos) {
       this.doc.text(str, styledOpt.x ?? this.doc.x, styledOpt.y ?? this.doc.y, styledOpt);
