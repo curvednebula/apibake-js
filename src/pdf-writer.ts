@@ -57,7 +57,7 @@ export class PdfWriter {
   private baseStyle: TextStyle = {};
 
   constructor(outputFilePath: string) {
-    this.doc = new PDFDocument({ bufferPages: true });
+    this.doc = new PDFDocument({ bufferPages: true, autoFirstPage: false });
 
     const writeStream = fs.createWriteStream(outputFilePath);
     this.doc.pipe(writeStream);
@@ -77,6 +77,10 @@ export class PdfWriter {
       indent: 0,
       lineGap: 0,
     };
+  }
+
+  addTitlePage(title: string, subtitle: string) {
+    this.doc.addPage();
   }
 
   newSection(name: string) {

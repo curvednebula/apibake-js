@@ -43,7 +43,7 @@ export class OpenApiParser {
   private firstHeaderLevel = 0;
 
   private spec: TJson = {}; // open api spec being processed
-  private topHeader?: string;
+  private sectionName?: string;
 
   // when multiple API specs parsed into the same doc - merge all schemas into one section
   private mergeSchemasInOneSection: boolean;
@@ -57,7 +57,7 @@ export class OpenApiParser {
     this.mergeSchemasInOneSection = mergeSchemasInOneSection;
   }
 
-  parse(apiJson: string, header: string) {
+  parse(apiJson: string, sectionName: string) {
     this.spec = JSON.parse(apiJson);
 
     const openapiVer = this.spec['openapi'] as string;
@@ -69,9 +69,9 @@ export class OpenApiParser {
       throw Error('Invalid OpenAPI version: $openapiVer, required 3.0.0+.');
     }
 
-    this.topHeader = header;
-    this.doc.newSection(this.topHeader);
-    this.doc.header(this.firstHeaderLevel, this.topHeader);
+    this.sectionName = sectionName;
+    this.doc.newSection(this.sectionName);
+    this.doc.header(this.firstHeaderLevel, this.sectionName);
 
     const paths = this.spec['paths'] as Record<string, any>;
 
@@ -247,7 +247,7 @@ export class OpenApiParser {
   }
 
   private schemaAnchor(schemaName: string): string {
-    return this.mergeSchemasInOneSection ?  `schemas: ${schemaName}` : `${this.topHeader}: ${schemaName}`;
+    return this.mergeSchemasInOneSection ?  `schemas: ${schemaName}` : `${this.sectionName}: ${schemaName}`;
   }
 
   private parseSchemaRef(schemaRef: TJson): _SchemaRef {
