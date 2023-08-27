@@ -48,6 +48,7 @@ export class PdfWriter {
 
     const writeStream = fs.createWriteStream(outputFilePath);
     this.doc.pipe(writeStream);
+    this.doc.on('pageAdded', () => this.onNewPageAdded());
 
     this.baseStyle = {
       font: FontFace.NORM,
@@ -172,6 +173,12 @@ export class PdfWriter {
 
   finish() {
     this.doc.end();
+  }
+
+  private onNewPageAdded() { 
+    // if (this.topRightText) { 
+    //   this.doc.text(this.topRightText, 50, 50);
+    // }
   }
 
   private setStyle(style: TextStyle) {
