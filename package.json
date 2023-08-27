@@ -1,10 +1,10 @@
 {
-  "name": "apibake",
+  "name": "apisnap",
   "version": "1.0.0",
   "description": "OpenAPI to PDF",
   "main": "index.js",
   "bin": {
-    "apibake": "./dist/index.js"
+    "apisnap": "./dist/index.js"
   },
   "scripts": {
     "build": "tsc",
