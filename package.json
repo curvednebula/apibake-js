@@ -1,7 +1,22 @@
 {
   "name": "apibake",
-  "version": "1.0.0",
-  "description": "OpenAPI to PDF",
+  "version": "1.0.1",
+  "description": "OpenAPI to PDF doc generator.",
+  "keywords": [
+    "doc generator",
+    "API spec generator",
+    "API doc generator",
+    "PDF generator",
+    "REST API",
+    "OpenAPI",
+    "Swagger"
+  ],
+  "author": "Illya Sikeryn",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/curvednebula/api-docbaker-js"
+  },
   "main": "index.js",
   "bin": {
     "apibake": "./dist/index.js"
@@ -11,8 +26,6 @@
     "dev": "ts-node ./src/index.ts -title 'REST API Spec' -subtitle 'created by ApiBake' test-data/v3.0 test-data/v3.1 test-data/private",
     "prod": "node ./dist/index.js"
   },
-  "author": "",
-  "license": "ISC",
   "devDependencies": {
     "@types/node": "^20.5.6",
     "ts-node": "^10.9.1",
