@@ -5,6 +5,7 @@ import { PdfWriter } from './pdf-writer';
 import { errorLog, log } from './logger';
 import * as path from 'path';
 import moment from 'moment';
+import YAML from 'yaml';
 
 // interface Arg {
 //   key: string;
@@ -84,6 +85,7 @@ const main = () => {
   const parser = new OpenApiParser(doc, !(args.separateSchemas.value as boolean));
 
   if (argsRest.length === 0) {
+    argsRest.push('test-data/v3.0/api-with-examples.yaml');
     argsRest.push('test-data/domain.json');
     argsRest.push('test-data/devicemgmt.json');
   }
@@ -95,17 +97,17 @@ const main = () => {
         log(`Parsing: ${filepath}`);
         const sectionName = capitalizeFirst(path.basename(filepath, fileExt));
         const inputJson = fs.readFileSync(filepath, 'utf8');
-        parser.parse(inputJson, sectionName);
+        const apiSpec = (fileExt === '.json') ? JSON.parse(inputJson) : YAML.parse(inputJson);
+        parser.parse(apiSpec, sectionName);
       } catch (e) {
-        errorLog(`ERROR while parsing ${filepath}: ${e}`);
+        errorLog(e, `ERROR while parsing ${filepath}`);
       }
     } else {
       errorLog(`Ignored input: ${filepath}`);
     }
   });
-  
-  parser.done();
 
+  parser.done();
   log(`Saving output to ${outputFile}`);
 }
 

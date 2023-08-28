@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "moment": "^2.29.4",
-    "pdfkit": "^0.13.0"
+    "pdfkit": "^0.13.0",
+    "yaml": "^2.3.2"
   }
 }

@@ -1,14 +1,14 @@
 import { log } from './logger';
 import { PdfWriter } from './pdf-writer';
 
-type TJson = Record<string, any>;
+export type ApiSpec = Record<string, any>;
 
-interface _JsonLeaf {
+interface ApiSpecLeaf {
   name: string;
   spec: any;
 }
 
-class _SchemaRef {
+class SchemaRef {
   text: string = '';
   schemaName: string = '';
   isArray = false;
@@ -25,8 +25,8 @@ class _SchemaRef {
     }
   }
 
-  static undefined(): _SchemaRef {
-    return new _SchemaRef('undefined', 'undefined');
+  static undefined(): SchemaRef {
+    return new SchemaRef('undefined', 'undefined');
   }
 
   isUndefined(): boolean {
@@ -42,12 +42,12 @@ export class OpenApiParser {
   private doc: PdfWriter;
   private firstHeaderLevel = 0;
 
-  private spec: TJson = {}; // open api spec being processed
+  private spec: ApiSpec = {}; // open api spec being processed
   private sectionName?: string;
 
   // when multiple API specs parsed into the same doc - merge all schemas into one section
   private mergeSchemasInOneSection: boolean;
-  private schemas: TJson = {};
+  private schemas: ApiSpec = {};
 
   constructor(
     doc: PdfWriter,
@@ -57,8 +57,8 @@ export class OpenApiParser {
     this.mergeSchemasInOneSection = mergeSchemasInOneSection;
   }
 
-  parse(apiJson: string, sectionName: string) {
-    this.spec = JSON.parse(apiJson);
+  parse(apiSpec: ApiSpec, sectionName: string) {
+    this.spec = apiSpec;
 
     const openapiVer = this.spec['openapi'] as string;
     if (openapiVer == null) {
@@ -82,7 +82,7 @@ export class OpenApiParser {
       });
     }
     
-    const schemas = this.spec['components']?.['schemas'] as TJson;
+    const schemas = this.spec['components']?.['schemas'] as ApiSpec;
 
     if (Object.entries(schemas).length > 0) {
       if (this.mergeSchemasInOneSection) {
@@ -103,7 +103,7 @@ export class OpenApiParser {
     this.doc.finish();
   }
 
-  private writePath(path: string, pathSpec: TJson) {
+  private writePath(path: string, pathSpec: ApiSpec) {
     Object.entries(pathSpec).forEach(([methodName, methodSpec]) => {
       const endpoint = `${methodName.toUpperCase()} ${path}`;
       log(` - ${endpoint}`);
@@ -113,8 +113,8 @@ export class OpenApiParser {
     });
   }
 
-  private writeMethod(methodSpec: TJson) {
-    const parameters = methodSpec['parameters'] as TJson[];
+  private writeMethod(methodSpec: ApiSpec) {
+    const parameters = methodSpec['parameters'] as ApiSpec[];
 
     if (parameters && Object.keys(parameters).length > 0) {
       this.doc.subHeader('Request Parameters:');
@@ -138,7 +138,7 @@ export class OpenApiParser {
       this.doc.indentEnd();
     }
 
-    const responses = methodSpec['responses'] as TJson;
+    const responses = methodSpec['responses'] as ApiSpec;
     if (responses) {
       Object.entries(responses).forEach(([key, value]) => {
         this.doc.subHeader(`Response ${key}:`);
@@ -149,24 +149,24 @@ export class OpenApiParser {
     }
   }
 
-  private writeBody(bodySpec: TJson) {
+  private writeBody(bodySpec: ApiSpec) {
     const descr = bodySpec['description'] as string;
     if (descr) {
       this.doc.comment(descr);
       this.doc.lineBreak(0.5);
     }
 
-    const contentSpec = bodySpec['content'] as TJson;
+    const contentSpec = bodySpec['content'] as ApiSpec;
     let emptyBody = true;
 
     if (contentSpec) {
       const content = this.getFirstOf(contentSpec, ['application/json', 'multipart/form-data']);
 
       if (content) {
-        const schemaRef = content.spec['schema'] as TJson;
+        const schemaRef = content.spec['schema'] as ApiSpec;
         if (schemaRef) {
           const schema = this.parseSchemaRef(schemaRef);
-          const schemaSpec = this.spec['components']?.['schemas']?.[schema.schemaName] as TJson;
+          const schemaSpec = this.spec['components']?.['schemas']?.[schema.schemaName] as ApiSpec;
           this.writeSchema(schemaSpec, schema.text);
           emptyBody = false;
         }
@@ -178,7 +178,7 @@ export class OpenApiParser {
     this.doc.lineBreak();
   }
 
-  private saveSchemasToParseLater(schemas: TJson) {
+  private saveSchemasToParseLater(schemas: ApiSpec) {
     Object.entries(schemas).forEach(([key, value]) => {
       if (!this.schemas[key]) {
         this.schemas[key] = value;
@@ -188,7 +188,7 @@ export class OpenApiParser {
     });
   }
   
-  private writeSchemas(schemas: TJson) {
+  private writeSchemas(schemas: ApiSpec) {
     log('Schemas:');
 
     const headerLevel = this.mergeSchemasInOneSection ? this.firstHeaderLevel : this.firstHeaderLevel + 1;
@@ -204,7 +204,7 @@ export class OpenApiParser {
     });
   }
 
-  private writeSchema(schemaSpec?: TJson, name?: string) {
+  private writeSchema(schemaSpec?: ApiSpec, name?: string) {
     const typeName = name ?? schemaSpec?.['type'] as string;
     if (typeName !== 'object') {
       this.doc.schemaType(typeName);
@@ -214,7 +214,7 @@ export class OpenApiParser {
       return;
     }
 
-    const properties = schemaSpec['properties'] as TJson;
+    const properties = schemaSpec['properties'] as ApiSpec;
     if (properties) {
       this.doc.text('{').indentStart();
 
@@ -250,25 +250,25 @@ export class OpenApiParser {
     return this.mergeSchemasInOneSection ?  `schemas: ${schemaName}` : `${this.sectionName}: ${schemaName}`;
   }
 
-  private parseSchemaRef(schemaRef: TJson): _SchemaRef {
+  private parseSchemaRef(schemaRef: ApiSpec): SchemaRef {
     if (schemaRef['type']) {
       if (schemaRef['type'] === 'array' && schemaRef['items']) {
         const typeRef = this.parseSchemaRef(schemaRef['items']);
-        return new _SchemaRef(`Array<${typeRef.text}>`, typeRef.schemaName, typeRef.anchor, true);
+        return new SchemaRef(`Array<${typeRef.text}>`, typeRef.schemaName, typeRef.anchor, true);
       } else {
-        return new _SchemaRef(schemaRef['type'], schemaRef['type']);
+        return new SchemaRef(schemaRef['type'], schemaRef['type']);
       }
     } else if (schemaRef['\$ref']) {
       const schemaName = this.schemaNameByRef(schemaRef['\$ref']);
       const anchor = this.schemaDefinitionExists(schemaName) ? this.schemaAnchor(schemaName) : undefined;
-      return new _SchemaRef(schemaName, schemaName, anchor);
+      return new SchemaRef(schemaName, schemaName, anchor);
     }
-    return _SchemaRef.undefined();
+    return SchemaRef.undefined();
   }
 
-  private writeParameter(paramSpec: TJson) {
+  private writeParameter(paramSpec: ApiSpec) {
     if (paramSpec['name']) {  
-      let typeRef: _SchemaRef | undefined = undefined;
+      let typeRef: SchemaRef | undefined = undefined;
 
       if (paramSpec['schema'] != null) {
         typeRef = this.parseSchemaRef(paramSpec['schema']);
@@ -285,7 +285,7 @@ export class OpenApiParser {
     }
   }
 
-  private getFirstOf(spec: TJson, children: string[]): _JsonLeaf | undefined {
+  private getFirstOf(spec: ApiSpec, children: string[]): ApiSpecLeaf | undefined {
     for (const child of children) {
       if (spec[child]) {
         return { name: child, spec: spec[child] };
@@ -294,7 +294,7 @@ export class OpenApiParser {
     return undefined;
   }
 
-  private writeVariable(name: string, typeRef?: _SchemaRef, description?: string, required?: boolean) {
+  private writeVariable(name: string, typeRef?: SchemaRef, description?: string, required?: boolean) {
     this.doc.dataField(
       `${name}${(required ?? true) ? '':'?'}`, 
       typeRef?.text,

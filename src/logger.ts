@@ -2,8 +2,11 @@ export const debugLog = (str: string) => {
   console.debug(str);
 }
 
-export const errorLog = (str: string) => {
-  console.error(str);
+export const errorLog = (e: any, str?: string) => {
+  console.error(e);
+  if (str) {
+    console.error(str);
+  }
 }
 
 export const log = (str: string) => {
