@@ -160,7 +160,7 @@ const main = () => {
         }
     }
     else {
-        (0, logger_1.log)('No .json or .yaml files to be parsed.\n');
+        (0, logger_1.log)('No .json or .yaml files found.\n');
         return;
     }
     if (errorMessages.length > 0) {
