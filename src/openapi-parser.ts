@@ -84,15 +84,13 @@ export class OpenApiParser {
     
     const schemas = this.spec['components']?.['schemas'] as ApiSpec;
 
-    if (Object.entries(schemas).length > 0) {
+    if (schemas && Object.entries(schemas).length > 0) {
       if (this.mergeSchemasInOneSection) {
         this.saveSchemasToParseLater(schemas);
       } else {
         this.writeSchemas(schemas);
       }
     }
-    
-    // this._doc.flush();
   }
 
   // if we parse multiple api spec files - done() shoud be called only once in the end
