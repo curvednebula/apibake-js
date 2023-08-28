@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "ts-node ./src/index.ts -title 'ApiBake Output Example' -subtitle 'created by Illya Ike' ",
+    "dev": "ts-node ./src/index.ts -title 'REST API Example' -subtitle 'created by ApiBake' ",
     "prod": "node ./dist/index.js"
   },
   "author": "",
