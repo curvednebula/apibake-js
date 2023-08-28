@@ -66,7 +66,7 @@ const printUsageHelp = () => {
 
 const main = () => {
   parseArgs();
-  if (args.help.value) {
+  if (args.help.value || argsRest.length === 0) {
     printUsageHelp();
     return;
   }
@@ -78,12 +78,6 @@ const main = () => {
     args.subtitle.value as string,
     moment().format('YYYY-MM-DD')
   );
-
-  const parser = new OpenApiParser(doc, !(args.separateSchemas.value as boolean));
-
-  if (argsRest.length === 0) {
-    argsRest.push('.');
-  }
 
   const errorMessages: string[] = [];
   const allFiles: string[] = [];
@@ -110,6 +104,8 @@ const main = () => {
       errorMessages.push(msg);
     }
   });
+
+  const parser = new OpenApiParser(doc, !(args.separateSchemas.value as boolean));
 
   const filesToParse = allFiles.filter((f) => ['.json', '.yaml', '.yml'].includes(path.extname(f)));
 
