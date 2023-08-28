@@ -4,6 +4,7 @@ import { OpenApiParser } from './openapi-parser';
 import { PdfWriter } from './pdf-writer';
 import { errorLog, log } from './logger';
 import * as path from 'path';
+import moment from 'moment';
 
 // interface Arg {
 //   key: string;
@@ -63,8 +64,8 @@ const main = () => {
   parseArgs();
 
   if (args.help.value) {
-    log('ApiSnap 1.0.0 - REST API PDF creator.');
-    log('Usage: apisnap <openapi.json> [<api2.json> <api3.json> ...] [<options>]');
+    log('ApiBake 1.0.0 - REST API PDF creator.');
+    log('Usage: apibake <openapi.json> [<api2.json> <api3.json> ...] [<options>]');
     log('Options:');
     printArgUsage();
     return;
@@ -73,7 +74,12 @@ const main = () => {
   const outputFile = args.output.value as string;
 
   const doc = new PdfWriter(outputFile);
-  doc.addTitlePage(args.title.value as string, args.subtitle.value as string);
+
+  doc.addTitlePage(
+    args.title.value as string, 
+    args.subtitle.value as string,
+    moment().format('YYYY-MM-DD')
+  );
 
   const parser = new OpenApiParser(doc, !(args.separateSchemas.value as boolean));
 

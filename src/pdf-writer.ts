@@ -79,10 +79,16 @@ export class PdfWriter {
     };
   }
 
-  addTitlePage(title: string, subtitle: string) {
+  addTitlePage(title: string, subtitle: string, date: string) {
     this.doc.addPage();
-    this.header(0, title);
-    this.header(1, subtitle);
+    this.doc.y = this.doc.page.height * 0.3;
+    this.styledText(title, { font: EFont.BOLD, fontSize: 20 }, { align: 'center' });
+    if (subtitle) {
+      this.lineBreak(1);
+      this.styledText(subtitle, { font: EFont.NORM, fontSize: 14, fillColor: this.colorAccent }, { align: 'center' });
+      this.lineBreak(0.5);
+      this.styledText(date, { font: EFont.NORM, fontSize: 12, fillColor: this.colorDisabled }, { align: 'center' });
+    }
   }
 
   newSection(name: string) {
@@ -108,6 +114,10 @@ export class PdfWriter {
       this.doc.text(str, styledOpt);
     }
     return this;
+  }
+
+  styledText(str: string, style: TextStyle, options?: TextOptions) {
+    this.withStyle(style, () => this.text(str, options));
   }
 
   header(level: number, str: string, anchor?: string) {

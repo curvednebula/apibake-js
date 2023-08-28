@@ -1,14 +1,14 @@
 {
-  "name": "apisnap",
+  "name": "apibake",
   "version": "1.0.0",
   "description": "OpenAPI to PDF",
   "main": "index.js",
   "bin": {
-    "apisnap": "./dist/index.js"
+    "apibake": "./dist/index.js"
   },
   "scripts": {
     "build": "tsc",
-    "dev": "ts-node ./src/index.ts",
+    "dev": "ts-node ./src/index.ts -title 'Example REST API' -subtitle 'Subheader goes here' ",
     "prod": "node ./dist/index.js"
   },
   "author": "",
@@ -19,6 +19,7 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
+    "moment": "^2.29.4",
     "pdfkit": "^0.13.0"
   }
 }
