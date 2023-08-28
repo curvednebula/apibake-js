@@ -15,11 +15,11 @@ interface Arg {
 }
 
 const args = {
-  output: <Arg>{ key: '-output', value: 'output.pdf', help: 'Output file.' },
+  output: <Arg>{ key: '-output', value: 'output.pdf', help: 'Output PDF file name.' },
   title: <Arg>{ key: '-title', value: 'API Spec', help: 'Document title.' },
   subtitle: <Arg>{ key: '-subtitle', value: '', help: 'Document sub title.' },
-  separateSchemas: <Arg>{ key: '-separate-schemas', value: false, help: 'When multiple API files parsed create separate schemas section for each file.' },
-  help: <Arg>{ key: '-help', value: false, help: 'Show this help page.' },
+  separateSchemas: <Arg>{ key: '-separate-schemas', value: false, help: 'When multiple API files parsed, create separate schemas section for each.' },
+  help: <Arg>{ key: '-h', value: false, help: 'Show this help.' },
 }
 
 const argsRest: string[] = [];
@@ -57,8 +57,10 @@ const printArgUsage = () => {
   });
 }
 
+const pack = require('../package.json'); 
+
 const printUsageHelp = () => {
-  log('ApiBake 1.0.0 - REST API PDF creator.');
+  log(`ApiBake ${pack.version} - REST API to PDF.`);
   log('Usage: apibake <openapi.json|.yaml|folder-name> [<file-or-folder2> <file-or-folder3> ...] [<options>]');
   log('Options:');
   printArgUsage();

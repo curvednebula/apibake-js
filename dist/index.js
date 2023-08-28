@@ -82,8 +82,9 @@ const printArgUsage = () => {
         }
     });
 };
+const pack = require('../package.json');
 const printUsageHelp = () => {
-    (0, logger_1.log)('ApiBake 1.0.0 - REST API PDF creator.');
+    (0, logger_1.log)(`ApiBake ${pack.version} - REST API to PDF.`);
     (0, logger_1.log)('Usage: apibake <openapi.json|.yaml|folder-name> [<file-or-folder2> <file-or-folder3> ...] [<options>]');
     (0, logger_1.log)('Options:');
     printArgUsage();
