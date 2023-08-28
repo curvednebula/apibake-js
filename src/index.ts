@@ -24,8 +24,28 @@ const args = {
 
 const argsRest: string[] = [];
 
-const parseArgs = () => {
+const printArgUsage = () => {
+  Object.values(args).forEach((a) => {
+    const needValue = typeof a.value !== 'boolean';
+    if (needValue) {
+      log(` ${a.key} <${typeof a.value}>: ${a.help}`);
+    } else {
+      log(` ${a.key}: ${a.help}`);
+    }
+  });
+}
+
+const printUsageHelp = () => {
+  log(`ApiBake ${pack.version} - REST API to PDF.`);
+  log('Usage: apibake <openapi.json|.yaml|folder-name> [<file-or-folder2> <file-or-folder3> ...] [<options>]');
+  log('Options:');
+  printArgUsage();
+}
+
+const parseArgs = (): boolean => {
   const rawArgs = process.argv.slice(2);
+
+  let allGood = true;
 
   for (let i=0; i<rawArgs.length; i++) {
     const arg = rawArgs[i];
@@ -39,35 +59,25 @@ const parseArgs = () => {
           case 'string': argObj.value = argValue; i++; break;
           case 'number': argObj.value = Number.parseFloat(argValue); i++; break;
         }
+      } else {
+        errorLog(`Unknown option: ${arg}`);
+        allGood = false;
       }
     } else {
       argsRest.push(arg);
     }
   }
-}
 
-const printArgUsage = () => {
-  Object.values(args).forEach((a) => {
-    const needValue = typeof a.value !== 'boolean';
-    if (needValue) {
-      log(` ${a.key} <${typeof a.value}>: ${a.help}`);
-    } else {
-      log(` ${a.key}: ${a.help}`);
-    }
-  });
+  return allGood;
 }
 
 const pack = require('../package.json'); 
 
-const printUsageHelp = () => {
-  log(`ApiBake ${pack.version} - REST API to PDF.`);
-  log('Usage: apibake <openapi.json|.yaml|folder-name> [<file-or-folder2> <file-or-folder3> ...] [<options>]');
-  log('Options:');
-  printArgUsage();
-}
-
 const main = () => {
-  parseArgs();
+  if (!parseArgs()) {
+    return;
+  }
+
   if (args.help.value || argsRest.length === 0) {
     printUsageHelp();
     return;
@@ -137,7 +147,6 @@ const main = () => {
     }
   } else {
     log('No .json or .yaml files found.\n');
-    printArgUsage();
     return;
   }
 

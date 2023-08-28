@@ -43,8 +43,26 @@ const args = {
     help: { key: '-h', value: false, help: 'Show this help.' },
 };
 const argsRest = [];
+const printArgUsage = () => {
+    Object.values(args).forEach((a) => {
+        const needValue = typeof a.value !== 'boolean';
+        if (needValue) {
+            (0, logger_1.log)(` ${a.key} <${typeof a.value}>: ${a.help}`);
+        }
+        else {
+            (0, logger_1.log)(` ${a.key}: ${a.help}`);
+        }
+    });
+};
+const printUsageHelp = () => {
+    (0, logger_1.log)(`ApiBake ${pack.version} - REST API to PDF.`);
+    (0, logger_1.log)('Usage: apibake <openapi.json|.yaml|folder-name> [<file-or-folder2> <file-or-folder3> ...] [<options>]');
+    (0, logger_1.log)('Options:');
+    printArgUsage();
+};
 const parseArgs = () => {
     const rawArgs = process.argv.slice(2);
+    let allGood = true;
     for (let i = 0; i < rawArgs.length; i++) {
         const arg = rawArgs[i];
         if (arg.startsWith('-')) {
@@ -65,32 +83,22 @@ const parseArgs = () => {
                         break;
                 }
             }
+            else {
+                (0, logger_1.errorLog)(`Unknown option: ${arg}`);
+                allGood = false;
+            }
         }
         else {
             argsRest.push(arg);
         }
     }
-};
-const printArgUsage = () => {
-    Object.values(args).forEach((a) => {
-        const needValue = typeof a.value !== 'boolean';
-        if (needValue) {
-            (0, logger_1.log)(` ${a.key} <${typeof a.value}>: ${a.help}`);
-        }
-        else {
-            (0, logger_1.log)(` ${a.key}: ${a.help}`);
-        }
-    });
+    return allGood;
 };
 const pack = require('../package.json');
-const printUsageHelp = () => {
-    (0, logger_1.log)(`ApiBake ${pack.version} - REST API to PDF.`);
-    (0, logger_1.log)('Usage: apibake <openapi.json|.yaml|folder-name> [<file-or-folder2> <file-or-folder3> ...] [<options>]');
-    (0, logger_1.log)('Options:');
-    printArgUsage();
-};
 const main = () => {
-    parseArgs();
+    if (!parseArgs()) {
+        return;
+    }
     if (args.help.value || argsRest.length === 0) {
         printUsageHelp();
         return;
@@ -152,8 +160,7 @@ const main = () => {
         }
     }
     else {
-        (0, logger_1.log)('No .json or .yaml files found.\n');
-        printArgUsage();
+        (0, logger_1.log)('No .json or .yaml files to be parsed.\n');
         return;
     }
     if (errorMessages.length > 0) {
