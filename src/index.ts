@@ -66,7 +66,7 @@ const main = () => {
 
   if (args.help.value) {
     log('ApiBake 1.0.0 - REST API PDF creator.');
-    log('Usage: apibake <openapi.json> [<api2.json> <api3.json> ...] [<options>]');
+    log('Usage: apibake <openapi.json|.yaml|folder-name> [<file-or-folder2> <file-or-folder3> ...] [<options>]');
     log('Options:');
     printArgUsage();
     return;
