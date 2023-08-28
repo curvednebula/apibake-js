@@ -57,15 +57,17 @@ const printArgUsage = () => {
   });
 }
 
+const printUsageHelp = () => {
+  log('ApiBake 1.0.0 - REST API PDF creator.');
+  log('Usage: apibake <openapi.json|.yaml|folder-name> [<file-or-folder2> <file-or-folder3> ...] [<options>]');
+  log('Options:');
+  printArgUsage();
+}
+
 const main = () => {
-
   parseArgs();
-
   if (args.help.value) {
-    log('ApiBake 1.0.0 - REST API PDF creator.');
-    log('Usage: apibake <openapi.json|.yaml|folder-name> [<file-or-folder2> <file-or-folder3> ...] [<options>]');
-    log('Options:');
-    printArgUsage();
+    printUsageHelp();
     return;
   }
 
@@ -80,8 +82,7 @@ const main = () => {
   const parser = new OpenApiParser(doc, !(args.separateSchemas.value as boolean));
 
   if (argsRest.length === 0) {
-    argsRest.push('test-data/v3.0/');
-    argsRest.push('test-data/private/');
+    argsRest.push('.');
   }
 
   const errorMessages: string[] = [];
@@ -112,28 +113,34 @@ const main = () => {
 
   const filesToParse = allFiles.filter((f) => ['.json', '.yaml', '.yml'].includes(path.extname(f)));
 
-  filesToParse.forEach((filepath) => {
-    const fileExt = path.extname(filepath);
+  if (filesToParse && filesToParse.length > 0) {
+    filesToParse.forEach((filepath) => {
+      const fileExt = path.extname(filepath);
+      try {
+        log(`Parsing: ${filepath}`);
+        const sectionName = capitalizeFirst(path.basename(filepath, fileExt));
+        const inputJson = fs.readFileSync(filepath, 'utf8');
+        const apiSpec = (fileExt === '.json') ? JSON.parse(inputJson) : YAML.parse(inputJson);
+        parser.parse(apiSpec, sectionName);
+      } catch (e) {
+        const msg = `ERROR: while parsing ${filepath}`;
+        errorLog(e, msg);
+        errorMessages.push(msg);
+      }
+    });
+
     try {
-      log(`Parsing: ${filepath}`);
-      const sectionName = capitalizeFirst(path.basename(filepath, fileExt));
-      const inputJson = fs.readFileSync(filepath, 'utf8');
-      const apiSpec = (fileExt === '.json') ? JSON.parse(inputJson) : YAML.parse(inputJson);
-      parser.parse(apiSpec, sectionName);
+      parser.done();
+      log(`Saving output to ${outputFile}`);
     } catch (e) {
-      const msg = `ERROR: while parsing ${filepath}`;
+      const msg = `ERROR: while saving ${outputFile}`;
       errorLog(e, msg);
       errorMessages.push(msg);
     }
-  });
-
-  try {
-    parser.done();
-    log(`Saving output to ${outputFile}`);
-  } catch (e) {
-    const msg = `ERROR: while saving ${outputFile}`;
-    errorLog(e, msg);
-    errorMessages.push(msg);
+  } else {
+    log('No .json or .yaml files found.\n');
+    printArgUsage();
+    return;
   }
 
   if (errorMessages.length > 0) {

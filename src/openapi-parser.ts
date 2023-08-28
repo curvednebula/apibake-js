@@ -76,7 +76,7 @@ export class OpenApiParser {
 
     const paths = this.spec['paths'] as Record<string, any>;
 
-    if (Object.entries(paths).length > 0) {
+    if (paths && Object.entries(paths).length > 0) {
       log('Endpoints:');
       Object.entries(paths).forEach(([key, value]) => {
         this.writePath(key, value);
