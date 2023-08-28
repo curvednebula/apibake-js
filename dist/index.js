@@ -36,11 +36,11 @@ const moment_1 = __importDefault(require("moment"));
 const yaml_1 = __importDefault(require("yaml"));
 const string_utils_1 = require("./string-utils");
 const args = {
-    output: { key: '-output', value: 'output.pdf', help: 'Output file.' },
+    output: { key: '-output', value: 'output.pdf', help: 'Output PDF file name.' },
     title: { key: '-title', value: 'API Spec', help: 'Document title.' },
     subtitle: { key: '-subtitle', value: '', help: 'Document sub title.' },
-    separateSchemas: { key: '-separate-schemas', value: false, help: 'When multiple API files parsed create separate schemas section for each file.' },
-    help: { key: '-help', value: false, help: 'Show this help page.' },
+    separateSchemas: { key: '-separate-schemas', value: false, help: 'When multiple API files parsed, create separate schemas section for each.' },
+    help: { key: '-h', value: false, help: 'Show this help.' },
 };
 const argsRest = [];
 const parseArgs = () => {
