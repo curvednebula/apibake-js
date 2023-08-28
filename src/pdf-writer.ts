@@ -79,14 +79,18 @@ export class PdfWriter {
     };
   }
 
-  addTitlePage(title: string, subtitle: string, date: string) {
+  addTitlePage(title: string, subtitle?: string, date?: string) {
     this.doc.addPage();
     this.doc.y = this.doc.page.height * 0.3;
     this.styledText(title, { font: EFont.BOLD, fontSize: 20 }, { align: 'center' });
+    this.lineBreak(1);
+    
     if (subtitle) {
-      this.lineBreak(1);
-      this.styledText(subtitle, { font: EFont.NORM, fontSize: 14, fillColor: this.colorAccent }, { align: 'center' });
+      this.styledText(subtitle, { font: EFont.NORM, fontSize: 14 }, { align: 'center' });
       this.lineBreak(0.5);
+    }
+    
+    if (date) {
       this.styledText(date, { font: EFont.NORM, fontSize: 12, fillColor: this.colorDisabled }, { align: 'center' });
     }
   }
