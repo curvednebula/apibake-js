@@ -90,17 +90,13 @@ const printUsageHelp = () => {
 };
 const main = () => {
     parseArgs();
-    if (args.help.value) {
+    if (args.help.value || argsRest.length === 0) {
         printUsageHelp();
         return;
     }
     const outputFile = args.output.value;
     const doc = new pdf_writer_1.PdfWriter(outputFile);
     doc.addTitlePage(args.title.value, args.subtitle.value, (0, moment_1.default)().format('YYYY-MM-DD'));
-    const parser = new openapi_parser_1.OpenApiParser(doc, !args.separateSchemas.value);
-    if (argsRest.length === 0) {
-        argsRest.push('.');
-    }
     const errorMessages = [];
     const allFiles = [];
     argsRest.forEach((arg) => {
@@ -126,6 +122,7 @@ const main = () => {
             errorMessages.push(msg);
         }
     });
+    const parser = new openapi_parser_1.OpenApiParser(doc, !args.separateSchemas.value);
     const filesToParse = allFiles.filter((f) => ['.json', '.yaml', '.yml'].includes(path.extname(f)));
     if (filesToParse && filesToParse.length > 0) {
         filesToParse.forEach((filepath) => {
