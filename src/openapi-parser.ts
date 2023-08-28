@@ -1,5 +1,6 @@
 import { log } from './logger';
 import { PdfWriter } from './pdf-writer';
+import { capitalizeFirst } from './string-utils';
 
 export type ApiSpec = Record<string, any>;
 
@@ -150,7 +151,7 @@ export class OpenApiParser {
   private writeBody(bodySpec: ApiSpec) {
     const descr = bodySpec['description'] as string;
     if (descr) {
-      this.doc.comment(descr);
+      this.doc.description(capitalizeFirst(descr));
       this.doc.lineBreak(0.5);
     }
 

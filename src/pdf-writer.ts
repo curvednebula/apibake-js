@@ -189,7 +189,7 @@ export class PdfWriter {
     return this;
   }
 
-  comment(str: string, options?: TextOptions) {
+  description(str: string, options?: TextOptions) {
     this.withStyle({ fillColor: this.colorDisabled }, () => {
       this.text(str, options);
     });
@@ -210,7 +210,7 @@ export class PdfWriter {
     }
 
     if (description) {
-      this.comment(`  // ${description}`, { goTo: null, underline: false });
+      this.description(`  // ${description}`, { goTo: null, underline: false });
     }
   }
 

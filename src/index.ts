@@ -6,6 +6,7 @@ import { errorLog, log } from './logger';
 import * as path from 'path';
 import moment from 'moment';
 import YAML from 'yaml';
+import { capitalizeFirst } from './string-utils';
 
 interface Arg {
   key: string;
@@ -56,10 +57,6 @@ const printArgUsage = () => {
   });
 }
 
-const capitalizeFirst = (str: string): string => {
-  return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
 const main = () => {
 
   parseArgs();
@@ -83,7 +80,7 @@ const main = () => {
   const parser = new OpenApiParser(doc, !(args.separateSchemas.value as boolean));
 
   if (argsRest.length === 0) {
-    argsRest.push('test-data/v3.0/api-with-examples.yaml');
+    argsRest.push('test-data/v3.0/');
     argsRest.push('test-data/private/');
   }
 
