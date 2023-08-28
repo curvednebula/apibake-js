@@ -15,7 +15,7 @@ interface Arg {
 }
 
 const args = {
-  output: <Arg>{ key: '-output', value: 'output.pdf', help: 'Output PDF file name.' },
+  output: <Arg>{ key: '-out', value: 'output.pdf', help: 'Output PDF file name.' },
   title: <Arg>{ key: '-title', value: 'API Spec', help: 'Document title.' },
   subtitle: <Arg>{ key: '-subtitle', value: '', help: 'Document sub title.' },
   separateSchemas: <Arg>{ key: '-separate-schemas', value: false, help: 'When multiple API files parsed, create separate schemas section for each.' },
