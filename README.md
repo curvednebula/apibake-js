@@ -1,6 +1,6 @@
 # ApiBake
 
-REST API PDF creator from OpenAPI .json or .yaml files. Supports OpenAPI 3.0.0 spec. 
+Creates REST API PDF specs from OpenAPI .json or .yaml files. Supports OpenAPI 3.0.0 spec.
 
 ## Quick start
 
