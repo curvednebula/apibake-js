@@ -61,13 +61,13 @@ export class OpenApiParser {
   parse(apiSpec: ApiSpec, sectionName: string) {
     this.spec = apiSpec;
 
-    const openapiVer = this.spec['openapi'] as string;
+    const openapiVer = this.spec['openapi'] ?? this.spec['swagger'];;
     if (openapiVer == null) {
       throw Error('Invalid OpenAPI specification.');
     }
     
     if (openapiVer.startsWith('1') || openapiVer.startsWith('2')) {
-      throw Error('Invalid OpenAPI version: $openapiVer, required 3.0.0+.');
+      throw Error(`Not supported OpenAPI version: ${openapiVer}, supported: 3.0.0+.`);
     }
 
     this.sectionName = sectionName;
