@@ -4,27 +4,20 @@ import { capitalizeFirst } from './string-utils';
 
 export type ApiSpec = Record<string, any>;
 
-interface ApiSpecLeaf {
-  name: string;
-  spec: any;
+class ApiSpecLeaf {
+  constructor(
+    public name: string,
+    public spec: any
+  ) {}
 }
 
 class SchemaRef {
-  text: string = '';
-  schemaName: string = '';
-  isArray = false;
-  anchor?: string;
-
-  constructor(text: string, schemaName: string, anchor?: string, isArray = false) {
-    this.text = text;
-    this.schemaName = schemaName;
-    if (anchor) {
-      this.anchor = anchor;
-    }
-    if (isArray) {
-      this.isArray = isArray;
-    }
-  }
+  constructor(
+    public text: string, 
+    public schemaName: string, 
+    public anchor?: string, 
+    public isArray = false
+  ) {}
 
   static undefined(): SchemaRef {
     return new SchemaRef('undefined', 'undefined');
@@ -40,23 +33,17 @@ class SchemaRef {
 }
 
 export class OpenApiParser {
-  private doc: PdfWriter;
   private firstHeaderLevel = 0;
 
   private spec: ApiSpec = {}; // open api spec being processed
   private sectionName?: string;
 
-  // when multiple API specs parsed into the same doc - merge all schemas into one section
-  private mergeSchemasInOneSection: boolean;
   private schemas: ApiSpec = {};
 
   constructor(
-    doc: PdfWriter,
-    mergeSchemasInOneSection = false
-  ) {
-    this.doc = doc;
-    this.mergeSchemasInOneSection = mergeSchemasInOneSection;
-  }
+    private doc: PdfWriter,
+    private mergeSchemasInOneSection = false
+  ) {}
 
   parse(apiSpec: ApiSpec, sectionName: string) {
     this.spec = apiSpec;
@@ -287,7 +274,7 @@ export class OpenApiParser {
   private getFirstOf(spec: ApiSpec, children: string[]): ApiSpecLeaf | undefined {
     for (const child of children) {
       if (spec[child]) {
-        return { name: child, spec: spec[child] };
+        return new ApiSpecLeaf(child, spec[child]);
       }
     }
     return undefined;

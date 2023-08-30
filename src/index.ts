@@ -7,12 +7,9 @@ import * as path from 'path';
 import moment from 'moment';
 import YAML from 'yaml';
 import { capitalizeFirst } from './string-utils';
+import { Arg, ArgsParser } from './arg-parser';
 
-interface Arg {
-  key: string;
-  value: string | number | boolean;
-  help: string;
-}
+const packageJson = require('../package.json'); 
 
 const args = {
   output: <Arg>{ key: '-out', value: 'output.pdf', help: 'Output PDF file name.' },
@@ -22,63 +19,22 @@ const args = {
   help: <Arg>{ key: '-h', value: false, help: 'Show this help.' },
 }
 
-const argsRest: string[] = [];
-
-const printArgUsage = () => {
-  Object.values(args).forEach((a) => {
-    const needValue = typeof a.value !== 'boolean';
-    if (needValue) {
-      log(` ${a.key} <${typeof a.value}>: ${a.help}`);
-    } else {
-      log(` ${a.key}: ${a.help}`);
-    }
-  });
-}
+const argsParser = new ArgsParser(args);
 
 const printUsageHelp = () => {
-  log(`ApiBake ${pack.version} - REST API to PDF.`);
+  log(`ApiBake ${packageJson.version} - REST API to PDF.`);
   log('Usage: apibake <openapi.json|.yaml|folder-name> [<file-or-folder2> <file-or-folder3> ...] [<options>]');
   log('Options:');
-  printArgUsage();
+  argsParser.printArgUsage();
 }
-
-const parseArgs = (): boolean => {
-  const rawArgs = process.argv.slice(2);
-
-  let allGood = true;
-
-  for (let i=0; i<rawArgs.length; i++) {
-    const arg = rawArgs[i];
-
-    if (arg.startsWith('-')) {
-      const argObj = Object.values(args).find((a) => a.key === arg);
-      if (argObj) {
-        const argValue = (i < rawArgs.length-1) ? rawArgs[i+1] : '';
-        switch (typeof argObj.value) {
-          case 'boolean': argObj.value = true; break;
-          case 'string': argObj.value = argValue; i++; break;
-          case 'number': argObj.value = Number.parseFloat(argValue); i++; break;
-        }
-      } else {
-        errorLog(`Unknown option: ${arg}`);
-        allGood = false;
-      }
-    } else {
-      argsRest.push(arg);
-    }
-  }
-
-  return allGood;
-}
-
-const pack = require('../package.json'); 
 
 const main = () => {
-  if (!parseArgs()) {
+  // TODO: parse will set values in args object itself - it is convinient that autocomplete works for args, but behaviour is not obvious
+  if (!argsParser.parse()) {
     return;
   }
 
-  if (args.help.value || argsRest.length === 0) {
+  if (args.help.value || argsParser.rest.length === 0) {
     printUsageHelp();
     return;
   }
@@ -94,7 +50,7 @@ const main = () => {
   const errorMessages: string[] = [];
   const allFiles: string[] = [];
 
-  argsRest.forEach((arg) => {
+  argsParser.rest.forEach((arg) => {
     if (fs.existsSync(arg)) {
       const stats = fs.statSync(arg);
 
