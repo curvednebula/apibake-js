@@ -1,5 +1,4 @@
 import fs from 'fs';
-import { debugLog, log } from './logger';
 const PDFDocument = require('pdfkit');
 
 interface TextStyle {
@@ -56,8 +55,22 @@ export class PdfWriter {
 
   private baseStyle: TextStyle = {};
 
+  private margins = {
+    horizontal: 70,
+    vertical: 50
+  };
+
   constructor(outputFilePath: string) {
-    this.doc = new PDFDocument({ bufferPages: true, autoFirstPage: false });
+    this.doc = new PDFDocument({ 
+      bufferPages: true, 
+      autoFirstPage: false, 
+      margins:  {
+        left: this.margins.horizontal,
+        right: this.margins.horizontal,
+        top: this.margins.vertical,
+        bottom: this.margins.vertical
+      }
+    });
 
     const writeStream = fs.createWriteStream(outputFilePath);
     this.doc.pipe(writeStream);
@@ -74,7 +87,7 @@ export class PdfWriter {
       font: EFont.NORM,
       fontSize: 12,
       fillColor: this.colorMain,
-      indent: 0,
+      indent: this.margins.horizontal,
       lineGap: 0,
     };
   }
@@ -103,12 +116,12 @@ export class PdfWriter {
 
   text(str: string, options?: TextOptions): PdfWriter {
     const style = this.currentStyle();
-    const styledOpt = { lineGap: style.lineGap, indent: style.indent, ...options };
+    const styledOpt = { lineGap: style.lineGap, /* indent: style.indent, */ ...options };
     
     const absolutePos = styledOpt.x !== undefined || styledOpt.y !== undefined;
-    if (absolutePos) {
-      delete styledOpt.indent; // when absolute coordinates - ignore indent
-    }
+    // if (absolutePos) {
+    //   delete styledOpt.indent; // when absolute coordinates - ignore indent
+    // }
 
     // debugLog(`text: ${str}, options: ${JSON.stringify(styledOpt)}`);
 
@@ -278,6 +291,7 @@ export class PdfWriter {
     const mergedStyle = { ...this.currentStyle(), ...style };
     mergedStyle.indent = (this.currentStyle().indent ?? 0) + (style.indent ?? 0); // nested indent
     this.setStyle(mergedStyle);
+    this.doc.x = mergedStyle.indent;
     this.styleStack.push(mergedStyle);
     return mergedStyle;
   }
@@ -286,6 +300,7 @@ export class PdfWriter {
     this.styleStack.pop();
     const prevStyle = this.currentStyle();
     this.setStyle(prevStyle);
+    this.doc.x = prevStyle.indent;
     return prevStyle;
   }
 

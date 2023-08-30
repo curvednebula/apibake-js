@@ -25,6 +25,7 @@
     "build": "tsc",
     "new-ver": "npm version patch && tsc && git commit -am 'publish to npm' && git push origin",
     "dev": "ts-node ./src/index.ts -title 'REST API Spec' -subtitle 'created by ApiBake' test-data/v3.0 test-data/v3.1 test-data/private",
+    "test": "ts-node ./src/test.ts",
     "prod": "node ./dist/index.js"
   },
   "devDependencies": {
@@ -35,6 +36,7 @@
   "dependencies": {
     "moment": "^2.29.4",
     "pdfkit": "^0.13.0",
+    "pdfkit-table": "^0.1.99",
     "yaml": "^2.3.2"
   }
 }
