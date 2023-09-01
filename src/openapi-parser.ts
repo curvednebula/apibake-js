@@ -11,7 +11,7 @@ class ApiSpecLeaf {
   ) {}
 }
 
-class SchemaRef {
+export class SchemaRef {
   constructor(
     public text: string, 
     public schemaName: string, 
@@ -30,6 +30,15 @@ class SchemaRef {
   toString(): string {
     return JSON.stringify(this);
   }
+}
+
+export class DataField {
+  constructor(
+    public name: string, 
+    public type?: SchemaRef, 
+    public description?: string,
+    public required?: boolean,
+  ) {}
 }
 
 export class OpenApiParser {
@@ -202,15 +211,17 @@ export class OpenApiParser {
 
     const properties = schemaSpec['properties'] as ApiSpec;
     if (properties) {
-      this.doc.text('{').indentStart();
-
       const required = schemaSpec['required'] as string[];
+      const dataFields: DataField[] = []; 
 
       Object.entries(properties).forEach(([key, value]) => {
         const typeRef = this.parseSchemaRef(value);
-        this.writeVariable(key, typeRef, value['description'], required?.includes(key));
+        dataFields.push(
+          new DataField(key, typeRef, value['description'], required?.includes(key))
+        );
       });
-      this.doc.indentEnd().text('}');
+      
+      this.doc.object(dataFields);
     }
     else if (schemaSpec['enum']) {
       this.doc.lineBreak(0.5);
@@ -267,7 +278,12 @@ export class OpenApiParser {
           typeRef = this.parseSchemaRef(leaf?.spec[0]!);
         }
       }
-      this.writeVariable(paramSpec['name'], typeRef, paramSpec['description'], paramSpec['required']);
+      this.doc.dataField(
+        paramSpec['name'],
+        typeRef,
+        paramSpec['description'],
+        paramSpec['required'],
+      );
     }
   }
 
@@ -278,14 +294,5 @@ export class OpenApiParser {
       }
     }
     return undefined;
-  }
-
-  private writeVariable(name: string, typeRef?: SchemaRef, description?: string, required?: boolean) {
-    this.doc.dataField(
-      `${name}${(required ?? true) ? '':'?'}`, 
-      typeRef?.text,
-      description, 
-      typeRef?.anchor
-    );
   }
 }

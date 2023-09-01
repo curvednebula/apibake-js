@@ -1,4 +1,5 @@
 import fs from 'fs';
+import { DataField, SchemaRef } from './openapi-parser';
 const PDFDocument = require('pdfkit');
 
 interface TextStyle {
@@ -208,16 +209,17 @@ export class PdfWriter {
     });
   }
 
-  dataField(name: string, type?: string, description?: string, typeAnchor?: string) {
-    this.text(name, { continued: (type || description) ? true : false });
+  dataField(name: string, type?: SchemaRef, description?: string, required?: boolean) {
+    const fieldName = `${name}${(required ?? true) ? '':'?'}`;
+    this.text(fieldName, { continued: (type || description) ? true : false });
 
-    if (type) {
+    if (type?.text) {
       this.text(': ', { continued: true });
       this.withStyle({ fillColor: this.colorAccent }, () => {
-        this.text(type, { 
-          goTo: typeAnchor, 
-          underline: typeAnchor ? true : false,
-          continued: description ? true : false 
+        this.text(type?.text, { 
+          goTo: type?.anchor, 
+          underline: type?.anchor ? true : false,
+          continued: description ? true : false
         });
       });
     }
@@ -225,6 +227,14 @@ export class PdfWriter {
     if (description) {
       this.description(`  // ${description}`, { goTo: null, underline: false });
     }
+  }
+
+  object(dataFields: DataField[]) {
+    this.text('{').indentStart();
+      dataFields.forEach((field) => {
+        this.dataField(field.name, field.type, field.description, field.required);
+      });
+    this.indentEnd().text('}');
   }
 
   schemaType(typeName: string) {
