@@ -31,8 +31,10 @@ class DataField {
     constructor(name, type, description, required) {
         this.name = name;
         this.type = type;
-        this.description = description;
         this.required = required;
+        if (description) {
+            this.description = (0, string_utils_1.sanitizeDescription)(description);
+        }
     }
 }
 exports.DataField = DataField;
@@ -125,7 +127,7 @@ class OpenApiParser {
         var _a, _b;
         const descr = bodySpec['description'];
         if (descr) {
-            this.doc.description((0, string_utils_1.capitalizeFirst)(descr));
+            this.doc.description((0, string_utils_1.sanitizeDescription)(descr));
             this.doc.lineBreak(0.5);
         }
         const contentSpec = bodySpec['content'];
