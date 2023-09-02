@@ -281,7 +281,7 @@ export class PdfWriter {
           if (this.pageHeaderNodes[i]) {
             this.text(this.pageHeaderNodes[i], { y: origTop / 2, align: 'right' });
           }
-          this.text(`Page ${i} / ${pages.count}`, { y: this.doc.page.height - origBottom / 2, align: 'right' });
+          this.text(`Page ${i} / ${pages.count - 1}`, { y: this.doc.page.height - origBottom / 2, align: 'right' });
         });
       }
       
