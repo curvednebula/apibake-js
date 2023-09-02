@@ -278,12 +278,9 @@ export class OpenApiParser {
           typeRef = this.parseSchemaRef(leaf?.spec[0]!);
         }
       }
-      this.doc.dataField(
-        paramSpec['name'],
-        typeRef,
-        paramSpec['description'],
-        paramSpec['required'],
-      );
+      this.doc.dataFields([
+        new DataField(paramSpec['name'], typeRef, paramSpec['description'], paramSpec['required'])
+      ]);
     }
   }
 

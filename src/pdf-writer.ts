@@ -209,28 +209,8 @@ export class PdfWriter {
     });
   }
 
-  dataField(name: string, type?: SchemaRef, description?: string, required?: boolean) {
-    const fieldName = `${name}${(required ?? true) ? '':'?'}`;
-    this.text(fieldName, { continued: (type?.text || description) ? true : false });
-
-    if (type?.text) {
-      this.text(': ', { continued: true });
-      this.withStyle({ fillColor: this.colorAccent }, () => {
-        this.text(type?.text, { 
-          goTo: type?.anchor, 
-          underline: type?.anchor ? true : false,
-          continued: description ? true : false
-        });
-      });
-    }
-
-    if (description) {
-      this.description(`  // ${description}`, { goTo: null, underline: false });
-    }
-  }
-
-  object(dataFields: DataField[]) {
-    this.text('{').indentStart();
+  dataFields(dataFields: DataField[]) {
+    const origX = this.doc.x;
 
     // const gap = 5;
     // let nameAndTypeMaxWidth = 0;
@@ -245,8 +225,6 @@ export class PdfWriter {
     //     nameAndTypeMaxWidth = width;
     //   }
     // });
-
-    const origX = this.doc.x;
 
     dataFields.forEach((field) => {
       const fieldName = `${field.name}${(field.required ?? true) ? '':'?'}`
@@ -268,15 +246,17 @@ export class PdfWriter {
       }
       this.doc.x = origX;
     });
+  }
 
+  object(dataFields: DataField[]) {
+    this.text('{').indentStart();
+    this.dataFields(dataFields);
     this.indentEnd().text('}');
   }
 
   schemaType(typeName: string) {
     this.text('Type: ', { continued: true });
-    this.withStyle({ fillColor: this.colorAccent }, () => {
-      this.text(typeName);
-    });
+    this.styledText(typeName, { fillColor: this.colorAccent });
   }
 
   enumValues(values: string[]) {
