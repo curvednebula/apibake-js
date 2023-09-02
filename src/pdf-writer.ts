@@ -6,7 +6,7 @@ interface TextStyle {
   font?: EFont;
   fontSize?: number;
   fillColor?: string;
-  indent?: number;
+  leftMargin?: number;
   lineGap?: number;
 }
 
@@ -16,6 +16,7 @@ interface TextOptions {
   underline?: boolean;
   destination?: string;
   goTo?: string | null;
+  indent?: number;
   align?: string;
   x?: number;
   y?: number;
@@ -50,16 +51,25 @@ export class PdfWriter {
   private colorAccent = 'blue';
   private colorDisabled = 'grey';
 
-  private paraGap = 4;
-  private subHeaderGap = 6;
-  private headerGap = 16;
-
-  private baseStyle: TextStyle = {};
+  private baseFontSize = 10;
+  private paraGap = this.baseFontSize / 3;
+  private subHeaderGap = this.baseFontSize / 2;
+  private headerGap = this.baseFontSize + 4;
+  private indentStep = 12;
 
   private margins = {
     horizontal: 70,
     vertical: 50
   };
+
+  private baseStyle: TextStyle = {
+    font: EFont.NORM,
+    fontSize: this.baseFontSize,
+    fillColor: this.colorMain,
+    leftMargin: this.margins.horizontal,
+    lineGap: 0,
+  };
+
 
   constructor(outputFilePath: string) {
     this.doc = new PDFDocument({ 
@@ -83,17 +93,10 @@ export class PdfWriter {
       this.pageNumber++;
       this.pageHeaderNodes.push(this.currentSectionName);
     });
-
-    this.baseStyle = {
-      font: EFont.NORM,
-      fontSize: 12,
-      fillColor: this.colorMain,
-      indent: this.margins.horizontal,
-      lineGap: 0,
-    };
   }
 
   addTitlePage(title: string, subtitle?: string, date?: string) {
+    // NOTE: font sizes on the title screen don't depent on base fontSize
     this.doc.addPage();
     this.doc.y = this.doc.page.height * 0.3;
     this.styledText(title, { font: EFont.BOLD, fontSize: 20 }, { align: 'center' });
@@ -117,12 +120,9 @@ export class PdfWriter {
 
   text(str: string, options?: TextOptions): PdfWriter {
     const style = this.currentStyle();
-    const styledOpt = { lineGap: style.lineGap, /* indent: style.indent, */ ...options };
+    const styledOpt = { lineGap: style.lineGap, ...options };
     
     const absolutePos = styledOpt.x !== undefined || styledOpt.y !== undefined;
-    // if (absolutePos) {
-    //   delete styledOpt.indent; // when absolute coordinates - ignore indent
-    // }
 
     // debugLog(`text: ${str}, options: ${JSON.stringify(styledOpt)}`);
 
@@ -141,7 +141,7 @@ export class PdfWriter {
   header(level: number, str: string, anchor?: string) {
     const doc = this.doc;
 
-    this.withStyle({ font: EFont.BOLD, fontSize: 16 - level * 2, lineGap: this.headerGap - level * 3 }, () => {
+    this.withStyle({ font: EFont.BOLD, fontSize: this.baseFontSize + 4 - level * 2, lineGap: this.headerGap - level * 3 }, () => {
       this.text(str, { destination: anchor });
     });
 
@@ -176,13 +176,13 @@ export class PdfWriter {
   }
 
   subHeader(str: string) {
-    this.withStyle({ font: EFont.BOLD, fontSize: 12,  lineGap: this.subHeaderGap }, () => {
+    this.withStyle({ font: EFont.BOLD, fontSize: this.baseFontSize,  lineGap: this.subHeaderGap }, () => {
       this.text(str);
     });
   }
 
   indentStart(): PdfWriter {
-    this.pushStyle({ indent: 12 });
+    this.pushStyle({ leftMargin: this.indentStep });
     return this;
   }
 
@@ -211,7 +211,7 @@ export class PdfWriter {
 
   dataField(name: string, type?: SchemaRef, description?: string, required?: boolean) {
     const fieldName = `${name}${(required ?? true) ? '':'?'}`;
-    this.text(fieldName, { continued: (type || description) ? true : false });
+    this.text(fieldName, { continued: (type?.text || description) ? true : false });
 
     if (type?.text) {
       this.text(': ', { continued: true });
@@ -231,9 +231,44 @@ export class PdfWriter {
 
   object(dataFields: DataField[]) {
     this.text('{').indentStart();
-      dataFields.forEach((field) => {
-        this.dataField(field.name, field.type, field.description, field.required);
-      });
+
+    // const gap = 5;
+    // let nameAndTypeMaxWidth = 0;
+    
+    // dataFields.forEach((field) => {
+    //   let nameAndType = `${field.name}${(field.required ?? true) ? '':'?'}`;
+    //   if (field.type?.text) {
+    //     nameAndType += `: ${field.type?.text}`;
+    //   }
+    //   const width = this.doc.widthOfString(nameAndType);
+    //   if (nameAndTypeMaxWidth < width) {
+    //     nameAndTypeMaxWidth = width;
+    //   }
+    // });
+
+    const origX = this.doc.x;
+
+    dataFields.forEach((field) => {
+      const fieldName = `${field.name}${(field.required ?? true) ? '':'?'}`
+      const fieldType = field.type?.text;
+      this.text(fieldName, { continued: fieldType ? true : false });
+
+      if (fieldType) {
+        this.text(': ', { continued: true });
+        this.styledText(fieldType, { fillColor: this.colorAccent }, {
+          goTo: field.type?.anchor, 
+          underline: field.type?.anchor ? true : false
+        });
+      }
+
+      if (field.description) {
+        this.doc.moveUp();
+        let nameAndType = fieldName + (fieldType ? `: ${fieldType}` : '');
+        this.styledText(`// ${field.description}`, { fillColor: this.colorDisabled }, { x: origX + 12, indent: this.doc.widthOfString(nameAndType) });
+      }
+      this.doc.x = origX;
+    });
+
     this.indentEnd().text('}');
   }
 
@@ -299,9 +334,9 @@ export class PdfWriter {
 
   private pushStyle(style: TextStyle): TextStyle {
     const mergedStyle = { ...this.currentStyle(), ...style };
-    mergedStyle.indent = (this.currentStyle().indent ?? 0) + (style.indent ?? 0); // nested indent
+    mergedStyle.leftMargin = (this.currentStyle().leftMargin ?? 0) + (style.leftMargin ?? 0); // nested indent
     this.setStyle(mergedStyle);
-    this.doc.x = mergedStyle.indent;
+    this.doc.x = mergedStyle.leftMargin;
     this.styleStack.push(mergedStyle);
     return mergedStyle;
   }
@@ -310,7 +345,7 @@ export class PdfWriter {
     this.styleStack.pop();
     const prevStyle = this.currentStyle();
     this.setStyle(prevStyle);
-    this.doc.x = prevStyle.indent;
+    this.doc.x = prevStyle.leftMargin;
     return prevStyle;
   }
 
