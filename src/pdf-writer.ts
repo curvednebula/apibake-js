@@ -141,9 +141,10 @@ export class PdfWriter {
   header(level: number, str: string, anchor?: string) {
     const doc = this.doc;
 
-    this.withStyle({ font: EFont.BOLD, fontSize: this.baseFontSize + 4 - level * 2, lineGap: this.headerGap - level * 3 }, () => {
-      this.text(str, { destination: anchor });
-    });
+    this.styledText(str, 
+      { font: EFont.BOLD, fontSize: this.baseFontSize + 4 - level * 2, lineGap: this.headerGap - level * 3 }, 
+      { destination: anchor }
+    );
 
     let newOutline;
     const outlinesLen = this.docOutlines.length;
@@ -176,9 +177,7 @@ export class PdfWriter {
   }
 
   subHeader(str: string) {
-    this.withStyle({ font: EFont.BOLD, fontSize: this.baseFontSize,  lineGap: this.subHeaderGap }, () => {
-      this.text(str);
-    });
+    this.styledText(str, { font: EFont.BOLD, fontSize: this.baseFontSize,  lineGap: this.subHeaderGap });
   }
 
   indentStart(): PdfWriter {
@@ -197,16 +196,12 @@ export class PdfWriter {
   }
 
   para(str: string): PdfWriter {
-    this.withStyle({ lineGap: this.paraGap }, () => {
-      this.text(str);
-    });
+    this.styledText(str, { lineGap: this.paraGap });
     return this;
   }
 
   description(str: string, options?: TextOptions) {
-    this.withStyle({ fillColor: this.colorDisabled }, () => {
-      this.text(str, options);
-    });
+    this.styledText(str, { fillColor: this.colorDisabled }, options);
   }
 
   dataFields(dataFields: DataField[]) {
