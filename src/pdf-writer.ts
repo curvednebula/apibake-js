@@ -228,7 +228,7 @@ export class PdfWriter {
 
       if (fieldType) {
         this.text(': ', { continued: true });
-        this.styledText(fieldType, { fillColor: this.colorAccent }, {
+        this.styledText(`${fieldType};`, { fillColor: this.colorAccent }, {
           goTo: field.type?.anchor, 
           underline: field.type?.anchor ? true : false
         });
@@ -255,10 +255,17 @@ export class PdfWriter {
   }
 
   enumValues(values: string[]) {
-    this.text('Values: ', { continued: true });
+    this.text('Values: ');
+    this.doc.moveUp();
+    const nextLineIndent = this.doc.x + this.indentStep;
+    const indent = this.doc.widthOfString('Values: ') - this.indentStep;
+
     values.forEach((value, index, array) => {
       const str = (index < array.length - 1) ? `${value}, ` : value;
       const continued = (index < array.length - 1) ? true : false;
+      if (index === 0) {
+        this.text(str, { x: nextLineIndent, indent, continued });
+      }
       this.text(str, { continued });
     });
   }
