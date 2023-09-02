@@ -1,6 +1,6 @@
 {
   "name": "apibake",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "OpenAPI to PDF doc generator.",
   "keywords": [
     "doc generator",
