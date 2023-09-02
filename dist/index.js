@@ -35,6 +35,8 @@ const path = __importStar(require("path"));
 const moment_1 = __importDefault(require("moment"));
 const yaml_1 = __importDefault(require("yaml"));
 const string_utils_1 = require("./string-utils");
+const arg_parser_1 = require("./arg-parser");
+const packageJson = require('../package.json');
 const args = {
     output: { key: '-out', value: 'output.pdf', help: 'Output PDF file name.' },
     title: { key: '-title', value: 'API Spec', help: 'Document title.' },
@@ -42,64 +44,19 @@ const args = {
     separateSchemas: { key: '-separate-schemas', value: false, help: 'When multiple API files parsed, create separate schemas section for each.' },
     help: { key: '-h', value: false, help: 'Show this help.' },
 };
-const argsRest = [];
-const printArgUsage = () => {
-    Object.values(args).forEach((a) => {
-        const needValue = typeof a.value !== 'boolean';
-        if (needValue) {
-            (0, logger_1.log)(` ${a.key} <${typeof a.value}>: ${a.help}`);
-        }
-        else {
-            (0, logger_1.log)(` ${a.key}: ${a.help}`);
-        }
-    });
-};
+const argsParser = new arg_parser_1.ArgsParser(args);
 const printUsageHelp = () => {
-    (0, logger_1.log)(`ApiBake ${pack.version} - REST API to PDF.`);
+    (0, logger_1.log)(`ApiBake ${packageJson.version} - REST API to PDF.`);
     (0, logger_1.log)('Usage: apibake <openapi.json|.yaml|folder-name> [<file-or-folder2> <file-or-folder3> ...] [<options>]');
     (0, logger_1.log)('Options:');
-    printArgUsage();
+    argsParser.printArgUsage();
 };
-const parseArgs = () => {
-    const rawArgs = process.argv.slice(2);
-    let allGood = true;
-    for (let i = 0; i < rawArgs.length; i++) {
-        const arg = rawArgs[i];
-        if (arg.startsWith('-')) {
-            const argObj = Object.values(args).find((a) => a.key === arg);
-            if (argObj) {
-                const argValue = (i < rawArgs.length - 1) ? rawArgs[i + 1] : '';
-                switch (typeof argObj.value) {
-                    case 'boolean':
-                        argObj.value = true;
-                        break;
-                    case 'string':
-                        argObj.value = argValue;
-                        i++;
-                        break;
-                    case 'number':
-                        argObj.value = Number.parseFloat(argValue);
-                        i++;
-                        break;
-                }
-            }
-            else {
-                (0, logger_1.errorLog)(`Unknown option: ${arg}`);
-                allGood = false;
-            }
-        }
-        else {
-            argsRest.push(arg);
-        }
-    }
-    return allGood;
-};
-const pack = require('../package.json');
 const main = () => {
-    if (!parseArgs()) {
+    // TODO: parse will set values in args object itself - it is convinient that autocomplete works for args, but behaviour is not obvious
+    if (!argsParser.parse()) {
         return;
     }
-    if (args.help.value || argsRest.length === 0) {
+    if (args.help.value || argsParser.rest.length === 0) {
         printUsageHelp();
         return;
     }
@@ -108,7 +65,7 @@ const main = () => {
     doc.addTitlePage(args.title.value, args.subtitle.value, (0, moment_1.default)().format('YYYY-MM-DD'));
     const errorMessages = [];
     const allFiles = [];
-    argsRest.forEach((arg) => {
+    argsParser.rest.forEach((arg) => {
         if (fs_1.default.existsSync(arg)) {
             const stats = fs_1.default.statSync(arg);
             if (stats.isDirectory()) {

@@ -31,11 +31,32 @@ class PdfWriter {
         this.colorMain = 'black';
         this.colorAccent = 'blue';
         this.colorDisabled = 'grey';
-        this.paraGap = 4;
-        this.subHeaderGap = 6;
-        this.headerGap = 16;
-        this.baseStyle = {};
-        this.doc = new PDFDocument({ bufferPages: true, autoFirstPage: false });
+        this.baseFontSize = 10;
+        this.paraGap = this.baseFontSize / 3;
+        this.subHeaderGap = this.baseFontSize / 2;
+        this.headerGap = this.baseFontSize + 4;
+        this.indentStep = 12;
+        this.margins = {
+            horizontal: 70,
+            vertical: 50
+        };
+        this.baseStyle = {
+            font: EFont.NORM,
+            fontSize: this.baseFontSize,
+            fillColor: this.colorMain,
+            leftMargin: this.margins.horizontal,
+            lineGap: 0,
+        };
+        this.doc = new PDFDocument({
+            bufferPages: true,
+            autoFirstPage: false,
+            margins: {
+                left: this.margins.horizontal,
+                right: this.margins.horizontal,
+                top: this.margins.vertical,
+                bottom: this.margins.vertical
+            }
+        });
         const writeStream = fs_1.default.createWriteStream(outputFilePath);
         this.doc.pipe(writeStream);
         // NOTE: it is impossible to edit pages in pageAdded as it is sometimes invoked after one text already placed on the page
@@ -45,15 +66,9 @@ class PdfWriter {
             this.pageNumber++;
             this.pageHeaderNodes.push(this.currentSectionName);
         });
-        this.baseStyle = {
-            font: EFont.NORM,
-            fontSize: 12,
-            fillColor: this.colorMain,
-            indent: 0,
-            lineGap: 0,
-        };
     }
     addTitlePage(title, subtitle, date) {
+        // NOTE: font sizes on the title screen don't depent on base fontSize
         this.doc.addPage();
         this.doc.y = this.doc.page.height * 0.3;
         this.styledText(title, { font: EFont.BOLD, fontSize: 20 }, { align: 'center' });
@@ -74,11 +89,8 @@ class PdfWriter {
     text(str, options) {
         var _a, _b;
         const style = this.currentStyle();
-        const styledOpt = Object.assign({ lineGap: style.lineGap, indent: style.indent }, options);
+        const styledOpt = Object.assign({ lineGap: style.lineGap }, options);
         const absolutePos = styledOpt.x !== undefined || styledOpt.y !== undefined;
-        if (absolutePos) {
-            delete styledOpt.indent; // when absolute coordinates - ignore indent
-        }
         // debugLog(`text: ${str}, options: ${JSON.stringify(styledOpt)}`);
         if (absolutePos) {
             this.doc.text(str, (_a = styledOpt.x) !== null && _a !== void 0 ? _a : this.doc.x, (_b = styledOpt.y) !== null && _b !== void 0 ? _b : this.doc.y, styledOpt);
@@ -93,9 +105,7 @@ class PdfWriter {
     }
     header(level, str, anchor) {
         const doc = this.doc;
-        this.withStyle({ font: EFont.BOLD, fontSize: 16 - level * 2, lineGap: this.headerGap - level * 3 }, () => {
-            this.text(str, { destination: anchor });
-        });
+        this.styledText(str, { font: EFont.BOLD, fontSize: this.baseFontSize + 4 - level * 2, lineGap: this.headerGap - level * 3 }, { destination: anchor });
         let newOutline;
         const outlinesLen = this.docOutlines.length;
         let headerLevelError = false;
@@ -126,12 +136,10 @@ class PdfWriter {
         }
     }
     subHeader(str) {
-        this.withStyle({ font: EFont.BOLD, fontSize: 12, lineGap: this.subHeaderGap }, () => {
-            this.text(str);
-        });
+        this.styledText(str, { font: EFont.BOLD, fontSize: this.baseFontSize, lineGap: this.subHeaderGap });
     }
     indentStart() {
-        this.pushStyle({ indent: 12 });
+        this.pushStyle({ leftMargin: this.indentStep });
         return this;
     }
     indentEnd() {
@@ -143,37 +151,54 @@ class PdfWriter {
         return this;
     }
     para(str) {
-        this.withStyle({ lineGap: this.paraGap }, () => {
-            this.text(str);
-        });
+        this.styledText(str, { lineGap: this.paraGap });
         return this;
     }
     description(str, options) {
-        this.withStyle({ fillColor: this.colorDisabled }, () => {
-            this.text(str, options);
+        this.styledText(str, { fillColor: this.colorDisabled }, options);
+    }
+    dataFields(dataFields) {
+        const origX = this.doc.x;
+        // const gap = 5;
+        // let nameAndTypeMaxWidth = 0;
+        // dataFields.forEach((field) => {
+        //   let nameAndType = `${field.name}${(field.required ?? true) ? '':'?'}`;
+        //   if (field.type?.text) {
+        //     nameAndType += `: ${field.type?.text}`;
+        //   }
+        //   const width = this.doc.widthOfString(nameAndType);
+        //   if (nameAndTypeMaxWidth < width) {
+        //     nameAndTypeMaxWidth = width;
+        //   }
+        // });
+        dataFields.forEach((field) => {
+            var _a, _b, _c, _d;
+            const fieldName = `${field.name}${((_a = field.required) !== null && _a !== void 0 ? _a : true) ? '' : '?'}`;
+            const fieldType = (_b = field.type) === null || _b === void 0 ? void 0 : _b.text;
+            this.text(fieldName, { continued: fieldType ? true : false });
+            if (fieldType) {
+                this.text(': ', { continued: true });
+                this.styledText(fieldType, { fillColor: this.colorAccent }, {
+                    goTo: (_c = field.type) === null || _c === void 0 ? void 0 : _c.anchor,
+                    underline: ((_d = field.type) === null || _d === void 0 ? void 0 : _d.anchor) ? true : false
+                });
+            }
+            if (field.description) {
+                this.doc.moveUp();
+                let nameAndType = fieldName + (fieldType ? `: ${fieldType}` : '');
+                this.styledText(`// ${field.description}`, { fillColor: this.colorDisabled }, { x: origX + 12, indent: this.doc.widthOfString(nameAndType) });
+            }
+            this.doc.x = origX;
         });
     }
-    dataField(name, type, description, typeAnchor) {
-        this.text(name, { continued: (type || description) ? true : false });
-        if (type) {
-            this.text(': ', { continued: true });
-            this.withStyle({ fillColor: this.colorAccent }, () => {
-                this.text(type, {
-                    goTo: typeAnchor,
-                    underline: typeAnchor ? true : false,
-                    continued: description ? true : false
-                });
-            });
-        }
-        if (description) {
-            this.description(`  // ${description}`, { goTo: null, underline: false });
-        }
+    object(dataFields) {
+        this.text('{').indentStart();
+        this.dataFields(dataFields);
+        this.indentEnd().text('}');
     }
     schemaType(typeName) {
         this.text('Type: ', { continued: true });
-        this.withStyle({ fillColor: this.colorAccent }, () => {
-            this.text(typeName);
-        });
+        this.styledText(typeName, { fillColor: this.colorAccent });
     }
     enumValues(values) {
         this.text('Values: ', { continued: true });
@@ -222,8 +247,9 @@ class PdfWriter {
     pushStyle(style) {
         var _a, _b;
         const mergedStyle = Object.assign(Object.assign({}, this.currentStyle()), style);
-        mergedStyle.indent = ((_a = this.currentStyle().indent) !== null && _a !== void 0 ? _a : 0) + ((_b = style.indent) !== null && _b !== void 0 ? _b : 0); // nested indent
+        mergedStyle.leftMargin = ((_a = this.currentStyle().leftMargin) !== null && _a !== void 0 ? _a : 0) + ((_b = style.leftMargin) !== null && _b !== void 0 ? _b : 0); // nested indent
         this.setStyle(mergedStyle);
+        this.doc.x = mergedStyle.leftMargin;
         this.styleStack.push(mergedStyle);
         return mergedStyle;
     }
@@ -231,6 +257,7 @@ class PdfWriter {
         this.styleStack.pop();
         const prevStyle = this.currentStyle();
         this.setStyle(prevStyle);
+        this.doc.x = prevStyle.leftMargin;
         return prevStyle;
     }
     currentStyle() {

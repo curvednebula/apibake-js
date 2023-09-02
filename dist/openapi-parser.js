@@ -1,21 +1,20 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.OpenApiParser = void 0;
+exports.OpenApiParser = exports.DataField = exports.SchemaRef = void 0;
 const logger_1 = require("./logger");
 const string_utils_1 = require("./string-utils");
+class ApiSpecLeaf {
+    constructor(name, spec) {
+        this.name = name;
+        this.spec = spec;
+    }
+}
 class SchemaRef {
     constructor(text, schemaName, anchor, isArray = false) {
-        this.text = '';
-        this.schemaName = '';
-        this.isArray = false;
         this.text = text;
         this.schemaName = schemaName;
-        if (anchor) {
-            this.anchor = anchor;
-        }
-        if (isArray) {
-            this.isArray = isArray;
-        }
+        this.anchor = anchor;
+        this.isArray = isArray;
     }
     static undefined() {
         return new SchemaRef('undefined', 'undefined');
@@ -27,23 +26,34 @@ class SchemaRef {
         return JSON.stringify(this);
     }
 }
+exports.SchemaRef = SchemaRef;
+class DataField {
+    constructor(name, type, description, required) {
+        this.name = name;
+        this.type = type;
+        this.description = description;
+        this.required = required;
+    }
+}
+exports.DataField = DataField;
 class OpenApiParser {
     constructor(doc, mergeSchemasInOneSection = false) {
+        this.doc = doc;
+        this.mergeSchemasInOneSection = mergeSchemasInOneSection;
         this.firstHeaderLevel = 0;
         this.spec = {}; // open api spec being processed
         this.schemas = {};
-        this.doc = doc;
-        this.mergeSchemasInOneSection = mergeSchemasInOneSection;
     }
     parse(apiSpec, sectionName) {
-        var _a;
+        var _a, _b;
         this.spec = apiSpec;
-        const openapiVer = this.spec['openapi'];
+        const openapiVer = (_a = this.spec['openapi']) !== null && _a !== void 0 ? _a : this.spec['swagger'];
+        ;
         if (openapiVer == null) {
             throw Error('Invalid OpenAPI specification.');
         }
         if (openapiVer.startsWith('1') || openapiVer.startsWith('2')) {
-            throw Error('Invalid OpenAPI version: $openapiVer, required 3.0.0+.');
+            throw Error(`Not supported OpenAPI version: ${openapiVer}, supported: 3.0.0+.`);
         }
         this.sectionName = sectionName;
         this.doc.newSection(this.sectionName);
@@ -55,7 +65,7 @@ class OpenApiParser {
                 this.writePath(key, value);
             });
         }
-        const schemas = (_a = this.spec['components']) === null || _a === void 0 ? void 0 : _a['schemas'];
+        const schemas = (_b = this.spec['components']) === null || _b === void 0 ? void 0 : _b['schemas'];
         if (schemas && Object.entries(schemas).length > 0) {
             if (this.mergeSchemasInOneSection) {
                 this.saveSchemasToParseLater(schemas);
@@ -169,13 +179,13 @@ class OpenApiParser {
         }
         const properties = schemaSpec['properties'];
         if (properties) {
-            this.doc.text('{').indentStart();
             const required = schemaSpec['required'];
+            const dataFields = [];
             Object.entries(properties).forEach(([key, value]) => {
                 const typeRef = this.parseSchemaRef(value);
-                this.writeVariable(key, typeRef, value['description'], required === null || required === void 0 ? void 0 : required.includes(key));
+                dataFields.push(new DataField(key, typeRef, value['description'], required === null || required === void 0 ? void 0 : required.includes(key)));
             });
-            this.doc.indentEnd().text('}');
+            this.doc.object(dataFields);
         }
         else if (schemaSpec['enum']) {
             this.doc.lineBreak(0.5);
@@ -228,19 +238,18 @@ class OpenApiParser {
                     typeRef = this.parseSchemaRef(leaf === null || leaf === void 0 ? void 0 : leaf.spec[0]);
                 }
             }
-            this.writeVariable(paramSpec['name'], typeRef, paramSpec['description'], paramSpec['required']);
+            this.doc.dataFields([
+                new DataField(paramSpec['name'], typeRef, paramSpec['description'], paramSpec['required'])
+            ]);
         }
     }
     getFirstOf(spec, children) {
         for (const child of children) {
             if (spec[child]) {
-                return { name: child, spec: spec[child] };
+                return new ApiSpecLeaf(child, spec[child]);
             }
         }
         return undefined;
-    }
-    writeVariable(name, typeRef, description, required) {
-        this.doc.dataField(`${name}${(required !== null && required !== void 0 ? required : true) ? '' : '?'}`, typeRef === null || typeRef === void 0 ? void 0 : typeRef.text, description, typeRef === null || typeRef === void 0 ? void 0 : typeRef.anchor);
     }
 }
 exports.OpenApiParser = OpenApiParser;
