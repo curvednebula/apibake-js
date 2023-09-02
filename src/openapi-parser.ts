@@ -1,6 +1,6 @@
 import { log } from './logger';
 import { PdfWriter } from './pdf-writer';
-import { capitalizeFirst } from './string-utils';
+import { sanitizeDescription } from './string-utils';
 
 export type ApiSpec = Record<string, any>;
 
@@ -33,12 +33,18 @@ export class SchemaRef {
 }
 
 export class DataField {
+  description?: string;
+
   constructor(
-    public name: string, 
-    public type?: SchemaRef, 
-    public description?: string,
+    public name: string,
+    public type?: SchemaRef,
+    description?: string,
     public required?: boolean,
-  ) {}
+  ) {
+    if (description) {
+      this.description = sanitizeDescription(description);
+    }
+  }
 }
 
 export class OpenApiParser {
@@ -147,7 +153,7 @@ export class OpenApiParser {
   private writeBody(bodySpec: ApiSpec) {
     const descr = bodySpec['description'] as string;
     if (descr) {
-      this.doc.description(capitalizeFirst(descr));
+      this.doc.description(sanitizeDescription(descr));
       this.doc.lineBreak(0.5);
     }
 
