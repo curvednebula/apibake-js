@@ -113,16 +113,16 @@ export class PdfWriter {
     // NOTE: font sizes on the title screen don't depent on base fontSize
     this.doc.addPage();
     this.doc.y = this.doc.page.height * 0.3;
-    this.styledText(title, { font: EFont.BOLD, fontSize: 20 }, { align: 'center' });
+    this.text(title, { font: EFont.BOLD, fontSize: 20 }, { align: 'center' });
     this.lineBreak(1);
     
     if (subtitle) {
-      this.styledText(subtitle, { font: EFont.NORM, fontSize: 14 }, { align: 'center' });
+      this.text(subtitle, { font: EFont.NORM, fontSize: 14 }, { align: 'center' });
       this.lineBreak(0.5);
     }
     
     if (date) {
-      this.styledText(date, { font: EFont.NORM, fontSize: 12, fillColor: this.style.color.secondary }, { align: 'center' });
+      this.text(date, { font: EFont.NORM, fontSize: 12, fillColor: this.style.color.secondary }, { align: 'center' });
     }
   }
 
@@ -132,13 +132,29 @@ export class PdfWriter {
     this.doc.addPage();
   }
 
-  text(str: string, options?: TextOptions): PdfWriter {
+  indentStart(): PdfWriter {
+    this.pushStyle({ leftMargin: this.style.format.indentStep });
+    return this;
+  }
+
+  indentEnd(): PdfWriter {
+    this.popStyle();
+    return this;
+  }
+
+  text(str: string, style?: TextStyle, options?: TextOptions): PdfWriter {
+    if (style && Object.keys(style).length > 0) {
+      this.withStyle(style, () => this.textImpl(str, options));
+    } else {
+      this.textImpl(str, options);
+    }
+    return this;
+  }
+
+  private textImpl(str: string, options?: TextOptions): PdfWriter {
     const style = this.currentStyle();
     const styledOpt = { lineGap: style.lineGap, ...options };
-    
     const absolutePos = styledOpt.x !== undefined || styledOpt.y !== undefined;
-
-    // debugLog(`text: ${str}, options: ${JSON.stringify(styledOpt)}`);
 
     if (absolutePos) {
       this.doc.text(str, styledOpt.x ?? this.doc.x, styledOpt.y ?? this.doc.y, styledOpt);
@@ -148,12 +164,8 @@ export class PdfWriter {
     return this;
   }
 
-  styledText(str: string, style: TextStyle, options?: TextOptions) {
-    this.withStyle(style, () => this.text(str, options));
-  }
-
   header(level: number, str: string, anchor?: string) {
-    this.styledText(str, 
+    this.text(str, 
       { fillColor: this.style.color.headers, font: EFont.BOLD, fontSize: this.style.font.baseSize + 4 - level * 2, lineGap: this.headerGap - level * 3 }, 
       { destination: anchor }
     );
@@ -162,8 +174,8 @@ export class PdfWriter {
 
   apiMethod(method: string, endpoint: string, headerLevel: number) {
     this.withStyle({ font: EFont.BOLD, fontSize: this.style.font.baseSize + 2, lineGap: this.headerGap - headerLevel * 3 }, () => {
-      this.styledText(method, { fillColor: this.style.color.highlight }, { continued: true });
-      this.styledText(` ${endpoint}`, { fillColor: this.style.color.headers });
+      this.text(method, { fillColor: this.style.color.highlight }, { continued: true });
+      this.text(` ${endpoint}`, { fillColor: this.style.color.headers });
     });
     this.addOutline(headerLevel, `${method} ${endpoint}`);
   }
@@ -200,17 +212,7 @@ export class PdfWriter {
   }
 
   subHeader(str: string) {
-    this.styledText(str, { fillColor: this.style.color.subHeaders, font: EFont.BOLD, fontSize: this.style.font.baseSize,  lineGap: this.subHeaderGap });
-  }
-
-  indentStart(): PdfWriter {
-    this.pushStyle({ leftMargin: this.style.format.indentStep });
-    return this;
-  }
-
-  indentEnd(): PdfWriter {
-    this.popStyle();
-    return this;
+    this.text(str, { fillColor: this.style.color.subHeaders, font: EFont.BOLD, fontSize: this.style.font.baseSize,  lineGap: this.subHeaderGap });
   }
 
   lineBreak(n: number = 1): PdfWriter {
@@ -219,12 +221,12 @@ export class PdfWriter {
   }
 
   para(str: string): PdfWriter {
-    this.styledText(str, { lineGap: this.paraGap });
+    this.text(str, { lineGap: this.paraGap });
     return this;
   }
 
   description(str: string, options?: TextOptions) {
-    this.styledText(str, { fillColor: this.style.color.secondary }, options);
+    this.text(str, { fillColor: this.style.color.secondary }, options);
   }
 
   dataFields(dataFields: DataField[]) {
@@ -247,11 +249,11 @@ export class PdfWriter {
     dataFields.forEach((field) => {
       const fieldName = `${field.name}${(field.required ?? true) ? '':'?'}`
       const fieldType = field.type?.text ? `${field.type?.text};`  : undefined;
-      this.text(fieldName, { continued: fieldType ? true : false });
+      this.text(fieldName, {}, { continued: fieldType ? true : false });
 
       if (fieldType) {
-        this.text(': ', { continued: true });
-        this.styledText(fieldType, { fillColor: this.style.color.highlight }, {
+        this.text(': ', {}, { continued: true });
+        this.text(fieldType, { fillColor: this.style.color.highlight }, {
           goTo: field.type?.anchor, 
           underline: field.type?.anchor ? true : false
         });
@@ -260,7 +262,7 @@ export class PdfWriter {
       if (field.description) {
         this.doc.moveUp();
         let nameAndType = fieldName + (fieldType ? `: ${fieldType}` : '');
-        this.styledText(`  // ${field.description}`, { fillColor: this.style.color.secondary }, { 
+        this.text(`  // ${field.description}`, { fillColor: this.style.color.secondary }, { 
           x: origX + this.style.format.indentStep, 
           indent: this.doc.widthOfString(nameAndType) - this.style.format.indentStep 
         });
@@ -269,7 +271,7 @@ export class PdfWriter {
     });
   }
 
-  object(dataFields: DataField[]) {
+  objectSchema(dataFields: DataField[]) {
     this.text('{').indentStart();
     this.dataFields(dataFields);
     this.indentEnd().text('}');
@@ -277,12 +279,12 @@ export class PdfWriter {
 
   schemaType(typeName: string, contentType?: string) {
     if (contentType) {
-      this.text('Content: ', { continued: true });
-      this.styledText(contentType, { fillColor: this.style.color.highlight }, { continued: true });
-      this.text(' | ', { continued: true });
+      this.text('Content: ', {}, { continued: true });
+      this.text(contentType, { fillColor: this.style.color.highlight }, { continued: true });
+      this.text(' | ', {}, { continued: true });
     }
-    this.text('Type: ', { continued: true });
-    this.styledText(typeName, { fillColor: this.style.color.highlight });
+    this.text('Type: ', {}, { continued: true });
+    this.text(typeName, { fillColor: this.style.color.highlight });
   }
 
   enumValues(values: string[]) {
@@ -296,9 +298,9 @@ export class PdfWriter {
         const str = (index < array.length - 1) ? `${value}, ` : value;
         const continued = (index < array.length - 1) ? true : false;
         if (index === 0) {
-          this.text(str, { x: nextLineIndent, indent, continued });
+          this.text(str, {}, { x: nextLineIndent, indent, continued });
         }
-        this.text(str, { continued });
+        this.text(str, {}, { continued });
       });
     });
   }
@@ -319,9 +321,9 @@ export class PdfWriter {
       if (i > 0) {
         this.withStyle({ font: EFont.NORM, fontSize: 9, fillColor: this.style.color.secondary }, () => {
           if (this.pageHeaderNodes[i]) {
-            this.text(this.pageHeaderNodes[i], { y: origTop / 2, align: 'right' });
+            this.text(this.pageHeaderNodes[i], {}, { y: origTop / 2, align: 'right' });
           }
-          this.text(`Page ${i} / ${pages.count - 1}`, { y: this.doc.page.height - origBottom / 2, align: 'right' });
+          this.text(`Page ${i} / ${pages.count - 1}`, {}, { y: this.doc.page.height - origBottom / 2, align: 'right' });
         });
       }
       

@@ -224,7 +224,7 @@ export class OpenApiParser {
         );
       });
       
-      this.doc.object(dataFields);
+      this.doc.objectSchema(dataFields);
     }
     else if (schemaSpec['enum']) {
       this.doc.lineBreak(0.5);
