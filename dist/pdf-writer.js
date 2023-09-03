@@ -13,6 +13,7 @@ var EFont;
     EFont[EFont["BOLD"] = 1] = "BOLD";
     EFont[EFont["ITALIC"] = 2] = "ITALIC";
     EFont[EFont["BOLD_ITALIC"] = 3] = "BOLD_ITALIC";
+    EFont[EFont["MONOSPACED"] = 4] = "MONOSPACED";
 })(EFont || (EFont = {}));
 ;
 class PdfWriter {
@@ -50,12 +51,11 @@ class PdfWriter {
             'Helvetica',
             'Helvetica-Bold',
             'Helvetica-Oblique',
-            'Helvetica-BoldOblique'
+            'Helvetica-BoldOblique',
+            'Courier-Bold'
         ];
-        // calculated in applyStyle()
-        this.paraGap = 0;
-        this.subHeaderGap = 0;
-        this.headerGap = 0;
+        this.headerGap = 0.7;
+        this.paraGap = 0.5;
         this.baseStyle = {
             font: EFont.NORM,
             fontSize: this.style.font.baseSize,
@@ -66,7 +66,6 @@ class PdfWriter {
         if (style) {
             this.style = style; // external style
         }
-        this.applyStyle();
         this.doc = new PDFDocument({
             bufferPages: true,
             autoFirstPage: false,
@@ -116,6 +115,10 @@ class PdfWriter {
         this.popStyle();
         return this;
     }
+    lineBreak(n = 1) {
+        this.doc.moveDown(n);
+        return this;
+    }
     text(str, style, options) {
         if (style && Object.keys(style).length > 0) {
             this.withStyle(style, () => this.textImpl(str, options));
@@ -139,7 +142,10 @@ class PdfWriter {
         return this;
     }
     header(level, str, anchor) {
-        this.text(str, { fillColor: this.style.color.headers, font: EFont.BOLD, fontSize: this.style.font.baseSize + 4 - level * 2, lineGap: this.headerGap - level * 3 }, { destination: anchor });
+        this.withStyle({ fillColor: this.style.color.headers, font: EFont.BOLD, fontSize: this.style.font.baseSize + 4 - level * 2 }, () => {
+            this.text(str, {}, { destination: anchor });
+            this.lineBreak(this.headerGap);
+        });
         this.addOutline(level, str);
     }
     apiHeader(method, endpoint, headerLevel) {
@@ -166,7 +172,7 @@ class PdfWriter {
                 .fillAndStroke(color, color);
             this.text(method, { fillColor: 'white' }, { continued: true });
             this.text(`  ${endpoint}`, { fillColor: this.style.color.headers });
-            this.doc.moveDown(0.7);
+            this.lineBreak(this.headerGap);
         });
         this.addOutline(headerLevel, `${method} ${endpoint}`);
     }
@@ -201,14 +207,14 @@ class PdfWriter {
         }
     }
     subHeader(str) {
-        this.text(str, { fillColor: this.style.color.subHeaders, font: EFont.BOLD, fontSize: this.style.font.baseSize, lineGap: this.subHeaderGap });
-    }
-    lineBreak(n = 1) {
-        this.doc.moveDown(n);
-        return this;
+        this.withStyle({ fillColor: this.style.color.subHeaders, font: EFont.BOLD, fontSize: this.style.font.baseSize }, () => {
+            this.text(str);
+            this.lineBreak(this.headerGap);
+        });
     }
     para(str) {
-        this.text(str, { lineGap: this.paraGap });
+        this.text(str);
+        this.lineBreak(this.paraGap);
         return this;
     }
     description(str, options) {
@@ -251,11 +257,6 @@ class PdfWriter {
             this.doc.x = origX;
         });
     }
-    objectSchema(dataFields) {
-        this.text('{').indentStart();
-        this.dataFields(dataFields);
-        this.indentEnd().text('}');
-    }
     schemaType(typeName, contentType) {
         if (contentType) {
             this.text('Content: ', {}, { continued: true });
@@ -264,6 +265,17 @@ class PdfWriter {
         }
         this.text('Type: ', {}, { continued: true });
         this.text(typeName, { fillColor: this.style.color.highlight });
+        this.lineBreak(this.paraGap);
+    }
+    objectSchema(dataFields) {
+        this.text('{').indentStart();
+        this.dataFields(dataFields);
+        this.indentEnd().text('}');
+    }
+    example(name, body) {
+        this.text(`Example "${name}":`, { font: EFont.BOLD });
+        this.lineBreak(this.paraGap);
+        this.text(body, { fillColor: this.style.color.highlight, fontSize: this.style.font.baseSize - 2, font: EFont.MONOSPACED });
     }
     enumValues(values) {
         this.text('Values: ');
@@ -303,11 +315,6 @@ class PdfWriter {
             doc.page.margins.bottom = origBottom;
         }
         doc.end();
-    }
-    applyStyle() {
-        this.paraGap = this.style.font.baseSize / 3;
-        this.subHeaderGap = this.style.font.baseSize / 2;
-        this.headerGap = this.style.font.baseSize + 4;
     }
     setStyle(style) {
         var _a;

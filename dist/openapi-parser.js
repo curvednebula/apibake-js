@@ -131,21 +131,35 @@ class OpenApiParser {
         const contentSpec = bodySpec['content'];
         let emptyBody = true;
         if (contentSpec) {
-            Object.entries(contentSpec).forEach(([contentType, spec]) => {
+            Object.entries(contentSpec).forEach(([contentType, contentSpec]) => {
                 var _a, _b;
-                const schemaRef = spec['schema'];
+                const schemaRef = contentSpec['schema'];
                 if (schemaRef) {
                     const schema = this.parseSchemaRef(schemaRef);
                     const schemaSpec = (_b = (_a = this.spec['components']) === null || _a === void 0 ? void 0 : _a['schemas']) === null || _b === void 0 ? void 0 : _b[schema.schemaName];
                     this.parseSchema(schemaSpec, schema.text, contentType);
                     emptyBody = false;
                 }
+                this.parseExamples(contentSpec['examples']);
             });
         }
         if (emptyBody) {
-            this.doc.para('Empty body.');
+            // this.doc.para('Empty body.');
         }
         this.doc.lineBreak();
+    }
+    parseExamples(spec) {
+        if (!spec) {
+            return;
+        }
+        Object.entries(spec).forEach(([name, spec]) => {
+            if ((spec === null || spec === void 0 ? void 0 : spec.value) && Object.keys(spec.value).length > 0) {
+                const exampleBody = typeof spec.value === 'object' ? JSON.stringify(spec.value, null, 2) : spec.value;
+                if (exampleBody) {
+                    this.doc.example(name, exampleBody);
+                }
+            }
+        });
     }
     saveSchemasToParseLater(schemas) {
         Object.entries(schemas).forEach(([key, value]) => {
