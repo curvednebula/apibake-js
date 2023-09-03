@@ -135,4 +135,3 @@ const main = () => {
 }
 
 main();
-

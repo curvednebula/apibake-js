@@ -36,7 +36,7 @@ export class PdfWriter {
     color: {
       main: '#333333',
       secondary: '#6B7B8E',
-      types: '#8A3324',
+      highlight: '#8A3324',
       headers: '#2A4D69',
       subHeaders: '#4B86B4',
     },
@@ -242,7 +242,7 @@ export class PdfWriter {
 
       if (fieldType) {
         this.text(': ', { continued: true });
-        this.styledText(fieldType, { fillColor: this.style.color.types }, {
+        this.styledText(fieldType, { fillColor: this.style.color.highlight }, {
           goTo: field.type?.anchor, 
           underline: field.type?.anchor ? true : false
         });
@@ -266,9 +266,14 @@ export class PdfWriter {
     this.indentEnd().text('}');
   }
 
-  schemaType(typeName: string) {
+  schemaType(typeName: string, contentType?: string) {
+    if (contentType) {
+      this.text('Content: ', { continued: true });
+      this.styledText(contentType, { fillColor: this.style.color.highlight }, { continued: true });
+      this.text(' | ', { continued: true });
+    }
     this.text('Type: ', { continued: true });
-    this.styledText(typeName, { fillColor: this.style.color.types });
+    this.styledText(typeName, { fillColor: this.style.color.highlight });
   }
 
   enumValues(values: string[]) {
@@ -277,13 +282,15 @@ export class PdfWriter {
     const nextLineIndent = this.doc.x + this.style.format.indentStep;
     const indent = this.doc.widthOfString('Values: ') - this.style.format.indentStep;
 
-    values.forEach((value, index, array) => {
-      const str = (index < array.length - 1) ? `${value}, ` : value;
-      const continued = (index < array.length - 1) ? true : false;
-      if (index === 0) {
-        this.text(str, { x: nextLineIndent, indent, continued });
-      }
-      this.text(str, { continued });
+    this.withStyle({ fillColor: this.style.color.highlight }, () => {
+      values.forEach((value, index, array) => {
+        const str = (index < array.length - 1) ? `${value}, ` : value;
+        const continued = (index < array.length - 1) ? true : false;
+        if (index === 0) {
+          this.text(str, { x: nextLineIndent, indent, continued });
+        }
+        this.text(str, { continued });
+      });
     });
   }
 

@@ -81,7 +81,7 @@ export class OpenApiParser {
     if (paths && Object.entries(paths).length > 0) {
       log('Endpoints:');
       Object.entries(paths).forEach(([key, value]) => {
-        this.writePath(key, value);
+        this.parsePath(key, value);
       });
     }
     
@@ -91,7 +91,7 @@ export class OpenApiParser {
       if (this.mergeSchemasInOneSection) {
         this.saveSchemasToParseLater(schemas);
       } else {
-        this.writeSchemas(schemas);
+        this.parseSchemas(schemas);
       }
     }
   }
@@ -99,22 +99,22 @@ export class OpenApiParser {
   // if we parse multiple api spec files - done() shoud be called only once in the end
   done() {
     if (this.mergeSchemasInOneSection && Object.entries(this.schemas).length > 0) {
-      this.writeSchemas(this.schemas);
+      this.parseSchemas(this.schemas);
     }
     this.doc.finish();
   }
 
-  private writePath(path: string, pathSpec: ApiSpec) {
+  private parsePath(path: string, pathSpec: ApiSpec) {
     Object.entries(pathSpec).forEach(([methodName, methodSpec]) => {
       const endpoint = `${methodName.toUpperCase()} ${path}`;
       log(` - ${endpoint}`);
       this.doc.header(this.firstHeaderLevel + 1, endpoint);
-      this.writeMethod(methodSpec);
+      this.parseMethod(methodSpec);
       this.doc.lineBreak(2);
     });
   }
 
-  private writeMethod(methodSpec: ApiSpec) {
+  private parseMethod(methodSpec: ApiSpec) {
     const parameters = methodSpec['parameters'] as ApiSpec[];
 
     if (parameters && Object.keys(parameters).length > 0) {
@@ -124,7 +124,7 @@ export class OpenApiParser {
       this.doc.indentStart();
       const uniqParams = parameters;
       uniqParams.forEach((param) => {
-        this.writeParameter(param);
+        this.parseParameter(param);
       });
       this.doc.indentEnd();
       this.doc.lineBreak();
@@ -135,7 +135,7 @@ export class OpenApiParser {
     if (body && Object.keys(body).length > 0) {
       this.doc.subHeader('Request Body:');
       this.doc.indentStart();
-      this.writeBody(body);
+      this.parseBody(body);
       this.doc.indentEnd();
     }
 
@@ -144,13 +144,13 @@ export class OpenApiParser {
       Object.entries(responses).forEach(([key, value]) => {
         this.doc.subHeader(`Response ${key}:`);
         this.doc.indentStart();
-        this.writeBody(value);
+        this.parseBody(value);
         this.doc.indentEnd();
       });
     }
   }
 
-  private writeBody(bodySpec: ApiSpec) {
+  private parseBody(bodySpec: ApiSpec) {
     const descr = bodySpec['description'] as string;
     if (descr) {
       this.doc.description(sanitizeDescription(descr));
@@ -161,17 +161,15 @@ export class OpenApiParser {
     let emptyBody = true;
 
     if (contentSpec) {
-      const content = this.getFirstOf(contentSpec, ['application/json', 'multipart/form-data']);
-
-      if (content) {
-        const schemaRef = content.spec['schema'] as ApiSpec;
+      Object.entries(contentSpec).forEach(([contentType, spec]) => {
+        const schemaRef = spec['schema'] as ApiSpec;
         if (schemaRef) {
           const schema = this.parseSchemaRef(schemaRef);
           const schemaSpec = this.spec['components']?.['schemas']?.[schema.schemaName] as ApiSpec;
-          this.writeSchema(schemaSpec, schema.text);
+          this.parseSchema(schemaSpec, schema.text, contentType);
           emptyBody = false;
         }
-      }
+      });
     }
     if (emptyBody) {
       this.doc.para('Empty body.');
@@ -189,7 +187,7 @@ export class OpenApiParser {
     });
   }
   
-  private writeSchemas(schemas: ApiSpec) {
+  private parseSchemas(schemas: ApiSpec) {
     log('Schemas:');
 
     const headerLevel = this.mergeSchemasInOneSection ? this.firstHeaderLevel : this.firstHeaderLevel + 1;
@@ -197,18 +195,18 @@ export class OpenApiParser {
     this.doc.newSection('Schemas');
     this.doc.header(headerLevel, 'Schemas');
 
-    Object.entries(schemas).forEach (([key, value]) => {
+    Object.entries(schemas).forEach(([key, value]) => {
       log(` - ${key}`);
       this.doc.header(headerLevel + 1, key, this.schemaAnchor(key));
-      this.writeSchema(value);
+      this.parseSchema(value);
       this.doc.lineBreak(2);
     });
   }
 
-  private writeSchema(schemaSpec?: ApiSpec, name?: string) {
+  private parseSchema(schemaSpec?: ApiSpec, name?: string, contentType?: string) {
     const typeName = name ?? schemaSpec?.['type'] as string;
     if (typeName !== 'object') {
-      this.doc.schemaType(typeName);
+      this.doc.schemaType(typeName, contentType);
     }
 
     if (!schemaSpec) {
@@ -269,7 +267,7 @@ export class OpenApiParser {
     return SchemaRef.undefined();
   }
 
-  private writeParameter(paramSpec: ApiSpec) {
+  private parseParameter(paramSpec: ApiSpec) {
     if (paramSpec['name']) {  
       let typeRef: SchemaRef | undefined = undefined;
 
