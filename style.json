@@ -1,0 +1,17 @@
+{
+  "color": {
+    "main": "#333333",
+    "secondary": "#6B7B8E",
+    "types": "red",
+    "headers": "#2A4D69",
+    "subHeaders": "#4B86B4"
+  },
+  "font": {
+    "baseSize": 10
+  },
+  "format": {
+    "indentStep": 12,
+    "horizontalMargin": 70,
+    "verticalMargin": 50
+  }
+}

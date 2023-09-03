@@ -16,6 +16,8 @@ const args = {
   title: <Arg>{ key: '-title', value: 'API Spec', help: 'Document title.' },
   subtitle: <Arg>{ key: '-subtitle', value: '', help: 'Document sub title.' },
   separateSchemas: <Arg>{ key: '-separate-schemas', value: false, help: 'When multiple API files parsed, create separate schemas section for each.' },
+  style: <Arg>{ key: '-style', value: '', help: 'Path to style.json. See -export-style.' },
+  exportStyle: <Arg>{ key: '-export-style', value: false, help: 'Save default document style into style.json for editing.' },
   help: <Arg>{ key: '-h', value: false, help: 'Show this help.' },
 }
 
@@ -34,13 +36,33 @@ const main = () => {
     return;
   }
 
-  if (args.help.value || argsParser.rest.length === 0) {
+  if (args.help.value) {
     printUsageHelp();
     return;
   }
 
+  let style;
+  if (args.style.value) {
+    try {
+      style = JSON.parse(fs.readFileSync(args.style.value as string, 'utf8'));
+    } catch (e) {
+      errorLog(`Error in ${args.style.value}: ${e}`);
+      return;
+    }
+  }
+
   const outputFile = args.output.value as string;
-  const doc = new PdfWriter(outputFile);
+  const doc = new PdfWriter(outputFile, style);
+
+  if (args.exportStyle.value) {
+    fs.writeFileSync('style.json', JSON.stringify(doc.style, null, 2));
+  }
+
+  if (argsParser.rest.length === 0) {
+    log('No .json or .yaml files specified.\n');
+    return;
+  }
+
   doc.addTitlePage(
     args.title.value as string, 
     args.subtitle.value as string,

@@ -16,7 +16,25 @@ var EFont;
 })(EFont || (EFont = {}));
 ;
 class PdfWriter {
-    constructor(outputFilePath) {
+    constructor(outputFilePath, style) {
+        // configurable PDF style
+        this.style = {
+            color: {
+                main: '#333333',
+                secondary: '#6B7B8E',
+                types: '#8A3324',
+                headers: '#2A4D69',
+                subHeaders: '#4B86B4',
+            },
+            font: {
+                baseSize: 10,
+            },
+            format: {
+                indentStep: 12,
+                horizontalMargin: 70,
+                verticalMargin: 50
+            }
+        };
         this.currentSectionName = '';
         this.pageNumber = 0;
         this.pageHeaderNodes = [];
@@ -28,33 +46,29 @@ class PdfWriter {
             'Helvetica-Oblique',
             'Helvetica-BoldOblique'
         ];
-        this.colorMain = 'black';
-        this.colorAccent = 'blue';
-        this.colorDisabled = 'grey';
-        this.baseFontSize = 10;
-        this.paraGap = this.baseFontSize / 3;
-        this.subHeaderGap = this.baseFontSize / 2;
-        this.headerGap = this.baseFontSize + 4;
-        this.indentStep = 12;
-        this.margins = {
-            horizontal: 70,
-            vertical: 50
-        };
+        // calculated in applyStyle()
+        this.paraGap = 0;
+        this.subHeaderGap = 0;
+        this.headerGap = 0;
         this.baseStyle = {
             font: EFont.NORM,
-            fontSize: this.baseFontSize,
-            fillColor: this.colorMain,
-            leftMargin: this.margins.horizontal,
+            fontSize: this.style.font.baseSize,
+            fillColor: this.style.color.main,
+            leftMargin: this.style.format.horizontalMargin,
             lineGap: 0,
         };
+        if (style) {
+            this.style = style; // external style
+        }
+        this.applyStyle();
         this.doc = new PDFDocument({
             bufferPages: true,
             autoFirstPage: false,
             margins: {
-                left: this.margins.horizontal,
-                right: this.margins.horizontal,
-                top: this.margins.vertical,
-                bottom: this.margins.vertical
+                left: this.style.format.horizontalMargin,
+                right: this.style.format.horizontalMargin,
+                top: this.style.format.verticalMargin,
+                bottom: this.style.format.verticalMargin
             }
         });
         const writeStream = fs_1.default.createWriteStream(outputFilePath);
@@ -78,7 +92,7 @@ class PdfWriter {
             this.lineBreak(0.5);
         }
         if (date) {
-            this.styledText(date, { font: EFont.NORM, fontSize: 12, fillColor: this.colorDisabled }, { align: 'center' });
+            this.styledText(date, { font: EFont.NORM, fontSize: 12, fillColor: this.style.color.secondary }, { align: 'center' });
         }
     }
     newSection(name) {
@@ -105,7 +119,7 @@ class PdfWriter {
     }
     header(level, str, anchor) {
         const doc = this.doc;
-        this.styledText(str, { font: EFont.BOLD, fontSize: this.baseFontSize + 4 - level * 2, lineGap: this.headerGap - level * 3 }, { destination: anchor });
+        this.styledText(str, { fillColor: this.style.color.headers, font: EFont.BOLD, fontSize: this.style.font.baseSize + 4 - level * 2, lineGap: this.headerGap - level * 3 }, { destination: anchor });
         let newOutline;
         const outlinesLen = this.docOutlines.length;
         let headerLevelError = false;
@@ -136,10 +150,10 @@ class PdfWriter {
         }
     }
     subHeader(str) {
-        this.styledText(str, { font: EFont.BOLD, fontSize: this.baseFontSize, lineGap: this.subHeaderGap });
+        this.styledText(str, { fillColor: this.style.color.subHeaders, font: EFont.BOLD, fontSize: this.style.font.baseSize, lineGap: this.subHeaderGap });
     }
     indentStart() {
-        this.pushStyle({ leftMargin: this.indentStep });
+        this.pushStyle({ leftMargin: this.style.format.indentStep });
         return this;
     }
     indentEnd() {
@@ -155,7 +169,7 @@ class PdfWriter {
         return this;
     }
     description(str, options) {
-        this.styledText(str, { fillColor: this.colorDisabled }, options);
+        this.styledText(str, { fillColor: this.style.color.secondary }, options);
     }
     dataFields(dataFields) {
         const origX = this.doc.x;
@@ -172,21 +186,24 @@ class PdfWriter {
         //   }
         // });
         dataFields.forEach((field) => {
-            var _a, _b, _c, _d;
+            var _a, _b, _c, _d, _e;
             const fieldName = `${field.name}${((_a = field.required) !== null && _a !== void 0 ? _a : true) ? '' : '?'}`;
-            const fieldType = (_b = field.type) === null || _b === void 0 ? void 0 : _b.text;
+            const fieldType = ((_b = field.type) === null || _b === void 0 ? void 0 : _b.text) ? `${(_c = field.type) === null || _c === void 0 ? void 0 : _c.text};` : undefined;
             this.text(fieldName, { continued: fieldType ? true : false });
             if (fieldType) {
                 this.text(': ', { continued: true });
-                this.styledText(`${fieldType};`, { fillColor: this.colorAccent }, {
-                    goTo: (_c = field.type) === null || _c === void 0 ? void 0 : _c.anchor,
-                    underline: ((_d = field.type) === null || _d === void 0 ? void 0 : _d.anchor) ? true : false
+                this.styledText(fieldType, { fillColor: this.style.color.types }, {
+                    goTo: (_d = field.type) === null || _d === void 0 ? void 0 : _d.anchor,
+                    underline: ((_e = field.type) === null || _e === void 0 ? void 0 : _e.anchor) ? true : false
                 });
             }
             if (field.description) {
                 this.doc.moveUp();
                 let nameAndType = fieldName + (fieldType ? `: ${fieldType}` : '');
-                this.styledText(`// ${field.description}`, { fillColor: this.colorDisabled }, { x: origX + 12, indent: this.doc.widthOfString(nameAndType) });
+                this.styledText(`  // ${field.description}`, { fillColor: this.style.color.secondary }, {
+                    x: origX + this.style.format.indentStep,
+                    indent: this.doc.widthOfString(nameAndType) - this.style.format.indentStep
+                });
             }
             this.doc.x = origX;
         });
@@ -198,13 +215,13 @@ class PdfWriter {
     }
     schemaType(typeName) {
         this.text('Type: ', { continued: true });
-        this.styledText(typeName, { fillColor: this.colorAccent });
+        this.styledText(typeName, { fillColor: this.style.color.types });
     }
     enumValues(values) {
         this.text('Values: ');
         this.doc.moveUp();
-        const nextLineIndent = this.doc.x + this.indentStep;
-        const indent = this.doc.widthOfString('Values: ') - this.indentStep;
+        const nextLineIndent = this.doc.x + this.style.format.indentStep;
+        const indent = this.doc.widthOfString('Values: ') - this.style.format.indentStep;
         values.forEach((value, index, array) => {
             const str = (index < array.length - 1) ? `${value}, ` : value;
             const continued = (index < array.length - 1) ? true : false;
@@ -225,7 +242,7 @@ class PdfWriter {
             doc.page.margins.top = 0;
             doc.page.margins.bottom = 0;
             if (i > 0) {
-                this.withStyle({ font: EFont.NORM, fontSize: 9, fillColor: this.colorDisabled }, () => {
+                this.withStyle({ font: EFont.NORM, fontSize: 9, fillColor: this.style.color.secondary }, () => {
                     if (this.pageHeaderNodes[i]) {
                         this.text(this.pageHeaderNodes[i], { y: origTop / 2, align: 'right' });
                     }
@@ -236,6 +253,11 @@ class PdfWriter {
             doc.page.margins.bottom = origBottom;
         }
         doc.end();
+    }
+    applyStyle() {
+        this.paraGap = this.style.font.baseSize / 3;
+        this.subHeaderGap = this.style.font.baseSize / 2;
+        this.headerGap = this.style.font.baseSize + 4;
     }
     setStyle(style) {
         var _a;

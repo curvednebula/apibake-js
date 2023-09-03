@@ -30,6 +30,26 @@ enum EFont {
 };
 
 export class PdfWriter {
+
+  // configurable PDF style
+  style = {
+    color: {
+      main: '#333333',
+      secondary: '#6B7B8E',
+      types: '#8A3324',
+      headers: '#2A4D69',
+      subHeaders: '#4B86B4',
+    },
+    font: {
+      baseSize: 10,
+    },
+    format: {
+      indentStep: 12,
+      horizontalMargin: 70,
+      verticalMargin: 50
+    }
+  }
+
   private doc;
 
   private currentSectionName = '';
@@ -47,41 +67,33 @@ export class PdfWriter {
     'Helvetica-BoldOblique'
   ];
 
-  private colorMain = '#333333';
-  private colorSecondary = '#6B7B8E';
-  private colorAccent = '#8A3324';
-  private colorHeader = '#2A4D69';
-  private colorSubHeader = '#4B86B4';
-  
-  private baseFontSize = 10;
-  private paraGap = this.baseFontSize / 3;
-  private subHeaderGap = this.baseFontSize / 2;
-  private headerGap = this.baseFontSize + 4;
-  private indentStep = 12;
-
-  private margins = {
-    horizontal: 70,
-    vertical: 50
-  };
+  // calculated in applyStyle()
+  private paraGap = 0;
+  private subHeaderGap = 0;
+  private headerGap = 0;
 
   private baseStyle: TextStyle = {
     font: EFont.NORM,
-    fontSize: this.baseFontSize,
-    fillColor: this.colorMain,
-    leftMargin: this.margins.horizontal,
+    fontSize: this.style.font.baseSize,
+    fillColor: this.style.color.main,
+    leftMargin: this.style.format.horizontalMargin,
     lineGap: 0,
   };
 
+  constructor(outputFilePath: string, style?: any) {
+    if (style) {
+      this.style = style; // external style
+    }
+    this.applyStyle();
 
-  constructor(outputFilePath: string) {
     this.doc = new PDFDocument({ 
       bufferPages: true, 
       autoFirstPage: false, 
       margins:  {
-        left: this.margins.horizontal,
-        right: this.margins.horizontal,
-        top: this.margins.vertical,
-        bottom: this.margins.vertical
+        left: this.style.format.horizontalMargin,
+        right: this.style.format.horizontalMargin,
+        top: this.style.format.verticalMargin,
+        bottom: this.style.format.verticalMargin
       }
     });
 
@@ -110,7 +122,7 @@ export class PdfWriter {
     }
     
     if (date) {
-      this.styledText(date, { font: EFont.NORM, fontSize: 12, fillColor: this.colorSecondary }, { align: 'center' });
+      this.styledText(date, { font: EFont.NORM, fontSize: 12, fillColor: this.style.color.secondary }, { align: 'center' });
     }
   }
 
@@ -144,7 +156,7 @@ export class PdfWriter {
     const doc = this.doc;
 
     this.styledText(str, 
-      { fillColor: this.colorHeader, font: EFont.BOLD, fontSize: this.baseFontSize + 4 - level * 2, lineGap: this.headerGap - level * 3 }, 
+      { fillColor: this.style.color.headers, font: EFont.BOLD, fontSize: this.style.font.baseSize + 4 - level * 2, lineGap: this.headerGap - level * 3 }, 
       { destination: anchor }
     );
 
@@ -179,11 +191,11 @@ export class PdfWriter {
   }
 
   subHeader(str: string) {
-    this.styledText(str, { fillColor: this.colorSubHeader, font: EFont.BOLD, fontSize: this.baseFontSize,  lineGap: this.subHeaderGap });
+    this.styledText(str, { fillColor: this.style.color.subHeaders, font: EFont.BOLD, fontSize: this.style.font.baseSize,  lineGap: this.subHeaderGap });
   }
 
   indentStart(): PdfWriter {
-    this.pushStyle({ leftMargin: this.indentStep });
+    this.pushStyle({ leftMargin: this.style.format.indentStep });
     return this;
   }
 
@@ -203,7 +215,7 @@ export class PdfWriter {
   }
 
   description(str: string, options?: TextOptions) {
-    this.styledText(str, { fillColor: this.colorSecondary }, options);
+    this.styledText(str, { fillColor: this.style.color.secondary }, options);
   }
 
   dataFields(dataFields: DataField[]) {
@@ -225,12 +237,12 @@ export class PdfWriter {
 
     dataFields.forEach((field) => {
       const fieldName = `${field.name}${(field.required ?? true) ? '':'?'}`
-      const fieldType = field.type?.text;
+      const fieldType = field.type?.text ? `${field.type?.text};`  : undefined;
       this.text(fieldName, { continued: fieldType ? true : false });
 
       if (fieldType) {
         this.text(': ', { continued: true });
-        this.styledText(`${fieldType};`, { fillColor: this.colorAccent }, {
+        this.styledText(fieldType, { fillColor: this.style.color.types }, {
           goTo: field.type?.anchor, 
           underline: field.type?.anchor ? true : false
         });
@@ -239,7 +251,10 @@ export class PdfWriter {
       if (field.description) {
         this.doc.moveUp();
         let nameAndType = fieldName + (fieldType ? `: ${fieldType}` : '');
-        this.styledText(`// ${field.description}`, { fillColor: this.colorSecondary }, { x: origX + 12, indent: this.doc.widthOfString(nameAndType) });
+        this.styledText(`  // ${field.description}`, { fillColor: this.style.color.secondary }, { 
+          x: origX + this.style.format.indentStep, 
+          indent: this.doc.widthOfString(nameAndType) - this.style.format.indentStep 
+        });
       }
       this.doc.x = origX;
     });
@@ -253,14 +268,14 @@ export class PdfWriter {
 
   schemaType(typeName: string) {
     this.text('Type: ', { continued: true });
-    this.styledText(typeName, { fillColor: this.colorAccent });
+    this.styledText(typeName, { fillColor: this.style.color.types });
   }
 
   enumValues(values: string[]) {
     this.text('Values: ');
     this.doc.moveUp();
-    const nextLineIndent = this.doc.x + this.indentStep;
-    const indent = this.doc.widthOfString('Values: ') - this.indentStep;
+    const nextLineIndent = this.doc.x + this.style.format.indentStep;
+    const indent = this.doc.widthOfString('Values: ') - this.style.format.indentStep;
 
     values.forEach((value, index, array) => {
       const str = (index < array.length - 1) ? `${value}, ` : value;
@@ -286,7 +301,7 @@ export class PdfWriter {
       doc.page.margins.bottom = 0;
 
       if (i > 0) {
-        this.withStyle({ font: EFont.NORM, fontSize: 9, fillColor: this.colorSecondary }, () => {
+        this.withStyle({ font: EFont.NORM, fontSize: 9, fillColor: this.style.color.secondary }, () => {
           if (this.pageHeaderNodes[i]) {
             this.text(this.pageHeaderNodes[i], { y: origTop / 2, align: 'right' });
           }
@@ -299,6 +314,12 @@ export class PdfWriter {
     }
 
     doc.end();
+  }
+
+  private applyStyle() {
+    this.paraGap = this.style.font.baseSize / 3;
+    this.subHeaderGap = this.style.font.baseSize / 2;
+    this.headerGap = this.style.font.baseSize + 4;
   }
 
   private setStyle(style: TextStyle) {

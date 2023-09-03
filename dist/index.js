@@ -42,6 +42,8 @@ const args = {
     title: { key: '-title', value: 'API Spec', help: 'Document title.' },
     subtitle: { key: '-subtitle', value: '', help: 'Document sub title.' },
     separateSchemas: { key: '-separate-schemas', value: false, help: 'When multiple API files parsed, create separate schemas section for each.' },
+    style: { key: '-style', value: '', help: 'Path to style.json. See -export-style.' },
+    exportStyle: { key: '-export-style', value: false, help: 'Save default document style into style.json for editing.' },
     help: { key: '-h', value: false, help: 'Show this help.' },
 };
 const argsParser = new arg_parser_1.ArgsParser(args);
@@ -56,12 +58,29 @@ const main = () => {
     if (!argsParser.parse()) {
         return;
     }
-    if (args.help.value || argsParser.rest.length === 0) {
+    if (args.help.value) {
         printUsageHelp();
         return;
     }
+    let style;
+    if (args.style.value) {
+        try {
+            style = JSON.parse(fs_1.default.readFileSync(args.style.value, 'utf8'));
+        }
+        catch (e) {
+            (0, logger_1.errorLog)(`Error in ${args.style.value}: ${e}`);
+            return;
+        }
+    }
     const outputFile = args.output.value;
-    const doc = new pdf_writer_1.PdfWriter(outputFile);
+    const doc = new pdf_writer_1.PdfWriter(outputFile, style);
+    if (args.exportStyle.value) {
+        fs_1.default.writeFileSync('style.json', JSON.stringify(doc.style, null, 2));
+    }
+    if (argsParser.rest.length === 0) {
+        (0, logger_1.log)('No .json or .yaml files specified.\n');
+        return;
+    }
     doc.addTitlePage(args.title.value, args.subtitle.value, (0, moment_1.default)().format('YYYY-MM-DD'));
     const errorMessages = [];
     const allFiles = [];
