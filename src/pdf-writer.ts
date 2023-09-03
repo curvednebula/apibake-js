@@ -47,10 +47,12 @@ export class PdfWriter {
     'Helvetica-BoldOblique'
   ];
 
-  private colorMain = 'black';
-  private colorAccent = 'blue';
-  private colorDisabled = 'grey';
-
+  private colorMain = '#333333';
+  private colorSecondary = '#6B7B8E';
+  private colorAccent = '#8A3324';
+  private colorHeader = '#2A4D69';
+  private colorSubHeader = '#4B86B4';
+  
   private baseFontSize = 10;
   private paraGap = this.baseFontSize / 3;
   private subHeaderGap = this.baseFontSize / 2;
@@ -108,7 +110,7 @@ export class PdfWriter {
     }
     
     if (date) {
-      this.styledText(date, { font: EFont.NORM, fontSize: 12, fillColor: this.colorDisabled }, { align: 'center' });
+      this.styledText(date, { font: EFont.NORM, fontSize: 12, fillColor: this.colorSecondary }, { align: 'center' });
     }
   }
 
@@ -142,7 +144,7 @@ export class PdfWriter {
     const doc = this.doc;
 
     this.styledText(str, 
-      { font: EFont.BOLD, fontSize: this.baseFontSize + 4 - level * 2, lineGap: this.headerGap - level * 3 }, 
+      { fillColor: this.colorHeader, font: EFont.BOLD, fontSize: this.baseFontSize + 4 - level * 2, lineGap: this.headerGap - level * 3 }, 
       { destination: anchor }
     );
 
@@ -177,7 +179,7 @@ export class PdfWriter {
   }
 
   subHeader(str: string) {
-    this.styledText(str, { font: EFont.BOLD, fontSize: this.baseFontSize,  lineGap: this.subHeaderGap });
+    this.styledText(str, { fillColor: this.colorSubHeader, font: EFont.BOLD, fontSize: this.baseFontSize,  lineGap: this.subHeaderGap });
   }
 
   indentStart(): PdfWriter {
@@ -201,7 +203,7 @@ export class PdfWriter {
   }
 
   description(str: string, options?: TextOptions) {
-    this.styledText(str, { fillColor: this.colorDisabled }, options);
+    this.styledText(str, { fillColor: this.colorSecondary }, options);
   }
 
   dataFields(dataFields: DataField[]) {
@@ -237,7 +239,7 @@ export class PdfWriter {
       if (field.description) {
         this.doc.moveUp();
         let nameAndType = fieldName + (fieldType ? `: ${fieldType}` : '');
-        this.styledText(`// ${field.description}`, { fillColor: this.colorDisabled }, { x: origX + 12, indent: this.doc.widthOfString(nameAndType) });
+        this.styledText(`// ${field.description}`, { fillColor: this.colorSecondary }, { x: origX + 12, indent: this.doc.widthOfString(nameAndType) });
       }
       this.doc.x = origX;
     });
@@ -284,7 +286,7 @@ export class PdfWriter {
       doc.page.margins.bottom = 0;
 
       if (i > 0) {
-        this.withStyle({ font: EFont.NORM, fontSize: 9, fillColor: this.colorDisabled }, () => {
+        this.withStyle({ font: EFont.NORM, fontSize: 9, fillColor: this.colorSecondary }, () => {
           if (this.pageHeaderNodes[i]) {
             this.text(this.pageHeaderNodes[i], { y: origTop / 2, align: 'right' });
           }

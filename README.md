@@ -2,19 +2,26 @@
 
 Convert OpenAPI spec to PDF. Supports OpenAPI 3.0.0+ json and yaml.
 
+Combine multiple OpenAPI specs into one PDF document.
+
 **Quick start:**
 
-    npm install -g apibake
+```
+npm install -g apibake
 
-    apibake <openapi.json|.yaml|folder-name> [<file-or-folder2> <file-or-folder3> ...] [<options>]
+apibake <openapi.json|.yaml|folder-name> [<file-or-folder2> <file-or-folder3> ...] [<options>]
+```
 
 **Options**:
 
-    -out <string>: Output file.
-    -title <string>: Document title.
-    -subtitle <string>: Document sub title.
-    -separate-schemas: When multiple API files parsed create separate schemas section for each file.
-    -h: Show this help.
+```
+ -out <string>: Output file.
+ -title <string>: Document title.
+ -subtitle <string>: Document sub title.
+ -separate-schemas: When multiple API files parsed create separate schemas section for each file.
+ -h: Show this help.
+```
+
 
 # MIT License
 
