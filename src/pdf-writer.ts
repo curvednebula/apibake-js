@@ -27,6 +27,7 @@ enum EFont {
   BOLD = 1,
   ITALIC = 2,
   BOLD_ITALIC = 3,
+  MONOSPACED = 4
 };
 
 export class PdfWriter {
@@ -71,13 +72,12 @@ export class PdfWriter {
     'Helvetica',
     'Helvetica-Bold',
     'Helvetica-Oblique',
-    'Helvetica-BoldOblique'
+    'Helvetica-BoldOblique',
+    'Courier-Bold'
   ];
 
-  // calculated in applyStyle()
-  private paraGap = 0;
-  private subHeaderGap = 0;
-  private headerGap = 0;
+  private headerGap = 0.7;
+  private paraGap = 0.5;
 
   private baseStyle: TextStyle = {
     font: EFont.NORM,
@@ -91,7 +91,6 @@ export class PdfWriter {
     if (style) {
       this.style = style; // external style
     }
-    this.applyStyle();
 
     this.doc = new PDFDocument({ 
       bufferPages: true, 
@@ -151,6 +150,11 @@ export class PdfWriter {
     return this;
   }
 
+  lineBreak(n: number = 1): PdfWriter {
+    this.doc.moveDown(n);
+    return this;
+  }
+
   text(str: string, style?: TextStyle, options?: TextOptions): PdfWriter {
     if (style && Object.keys(style).length > 0) {
       this.withStyle(style, () => this.textImpl(str, options));
@@ -174,10 +178,10 @@ export class PdfWriter {
   }
 
   header(level: number, str: string, anchor?: string) {
-    this.text(str, 
-      { fillColor: this.style.color.headers, font: EFont.BOLD, fontSize: this.style.font.baseSize + 4 - level * 2, lineGap: this.headerGap - level * 3 }, 
-      { destination: anchor }
-    );
+    this.withStyle({ fillColor: this.style.color.headers, font: EFont.BOLD, fontSize: this.style.font.baseSize + 4 - level * 2 }, () => {
+      this.text(str, {}, { destination: anchor });
+      this.lineBreak(this.headerGap);
+    });
     this.addOutline(level, str);
   }
 
@@ -209,7 +213,7 @@ export class PdfWriter {
       
       this.text(method, { fillColor: 'white' }, { continued: true });
       this.text(`  ${endpoint}`, { fillColor: this.style.color.headers });
-      this.doc.moveDown(0.7);
+      this.lineBreak(this.headerGap);
     });
     this.addOutline(headerLevel, `${method} ${endpoint}`);
   }
@@ -246,16 +250,15 @@ export class PdfWriter {
   }
 
   subHeader(str: string) {
-    this.text(str, { fillColor: this.style.color.subHeaders, font: EFont.BOLD, fontSize: this.style.font.baseSize,  lineGap: this.subHeaderGap });
-  }
-
-  lineBreak(n: number = 1): PdfWriter {
-    this.doc.moveDown(n);
-    return this;
+    this.withStyle({ fillColor: this.style.color.subHeaders, font: EFont.BOLD, fontSize: this.style.font.baseSize }, () => {
+      this.text(str, );
+      this.lineBreak(this.headerGap);
+    });
   }
 
   para(str: string): PdfWriter {
-    this.text(str, { lineGap: this.paraGap });
+    this.text(str);
+    this.lineBreak(this.paraGap);
     return this;
   }
 
@@ -305,12 +308,6 @@ export class PdfWriter {
     });
   }
 
-  objectSchema(dataFields: DataField[]) {
-    this.text('{').indentStart();
-    this.dataFields(dataFields);
-    this.indentEnd().text('}');
-  }
-
   schemaType(typeName: string, contentType?: string) {
     if (contentType) {
       this.text('Content: ', {}, { continued: true });
@@ -319,6 +316,19 @@ export class PdfWriter {
     }
     this.text('Type: ', {}, { continued: true });
     this.text(typeName, { fillColor: this.style.color.highlight });
+    this.lineBreak(this.paraGap);
+  }
+
+  objectSchema(dataFields: DataField[]) {
+    this.text('{').indentStart();
+    this.dataFields(dataFields);
+    this.indentEnd().text('}');
+  }
+
+  example(name: string, body: string) {
+    this.text(`Example "${name}":`, { font: EFont.BOLD });
+    this.lineBreak(this.paraGap);
+    this.text(body, { fillColor: this.style.color.highlight, fontSize: this.style.font.baseSize - 2, font: EFont.MONOSPACED });
   }
 
   enumValues(values: string[]) {
@@ -366,12 +376,6 @@ export class PdfWriter {
     }
 
     doc.end();
-  }
-
-  private applyStyle() {
-    this.paraGap = this.style.font.baseSize / 3;
-    this.subHeaderGap = this.style.font.baseSize / 2;
-    this.headerGap = this.style.font.baseSize + 4;
   }
 
   private setStyle(style: TextStyle) {
