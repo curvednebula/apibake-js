@@ -13,10 +13,12 @@ apibake <openapi.json|.yaml|folder-name> [<file-or-folder2> <file-or-folder3> ..
 **Options:**
 
 ```
- -out <string>: Output file.
+ -out <string>: Output PDF file name.
  -title <string>: Document title.
  -subtitle <string>: Document sub title.
- -separate-schemas: When multiple API files parsed create separate schemas section for each file.
+ -separate-schemas: When multiple API files parsed, create separate schemas section for each.
+ -style <string>: Style to use. See -export-style.
+ -export-style: Save document style into style.json for editing.
  -h: Show this help.
 ```
 
