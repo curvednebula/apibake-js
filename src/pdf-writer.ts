@@ -45,7 +45,7 @@ export class PdfWriter {
       postMethod: '#D87F0A',
       patchMethod: '#C2A000',
       deleteMethod: '#D0021B',
-      otherMethod: '#2A4D69'
+      otherMethods: '#2A4D69'
     },
     font: {
       baseSize: 10,
@@ -193,7 +193,7 @@ export class PdfWriter {
     this.withStyle({ font: EFont.BOLD, fontSize }, () => {
       const width = this.doc.widthOfString(method);
       const height = this.doc.heightOfString(method);
-      const color = colorByMethod[method.toLowerCase()] ?? this.style.color.otherMethod;
+      const color = colorByMethod[method.toLowerCase()] ?? this.style.color.otherMethods;
 
       // bugfix: make sure we are already on a new page if needed - to dray rect correctly 
       this.text(method, {}, { continued: true });
