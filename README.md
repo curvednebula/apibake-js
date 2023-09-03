@@ -1,8 +1,8 @@
 # ApiBake
 
-Creates REST API PDF spec from OpenAPI .json or .yaml files. Supports OpenAPI 3.0.0.
+Convert OpenAPI spec to PDF. Supports OpenAPI 3.0.0+ json and yaml.
 
-## Quick start
+**Quick start:**
 
     npm install -g apibake
 

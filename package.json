@@ -1,15 +1,20 @@
 {
   "name": "apibake",
   "version": "0.1.2",
-  "description": "OpenAPI to PDF doc generator.",
+  "description": "OpenAPI to PDF generator.",
   "keywords": [
-    "doc generator",
-    "API spec generator",
-    "API doc generator",
-    "PDF generator",
+    "OpenAPI",
+    "Open API",
+    "Swagger",
     "REST API",
     "OpenAPI",
-    "Swagger"
+    "Open API",
+    "PDF",
+    "generator",
+    "PDF generator",
+    "doc generator",
+    "API spec generator",
+    "API doc generator"
   ],
   "author": "Illya Sikeryn",
   "license": "MIT",
