@@ -9,15 +9,16 @@ import YAML from 'yaml';
 import { capitalizeFirst } from './string-utils';
 import { Arg, ArgsParser } from './arg-parser';
 
-const packageJson = require('../package.json'); 
+const packageJson = require('../package.json');
+const configFile = 'apibake-config.json';
 
 const args = {
   output: <Arg>{ key: '-out', value: 'output.pdf', help: 'Output PDF file name.' },
   title: <Arg>{ key: '-title', value: 'API Spec', help: 'Document title.' },
   subtitle: <Arg>{ key: '-subtitle', value: '', help: 'Document sub title.' },
   separateSchemas: <Arg>{ key: '-separate-schemas', value: false, help: 'When multiple API files parsed, create separate schemas section for each.' },
-  style: <Arg>{ key: '-style', value: '', help: 'Path to apibake-style.json. See -export-style.' },
-  exportStyle: <Arg>{ key: '-export-style', value: false, help: 'Save default document style into json file for editing.' },
+  config: <Arg>{ key: '-config', value: '', help: `Path to ${configFile}. See -export-config.` },
+  exportConfig: <Arg>{ key: '-export-config', value: false, help: 'Save default config into json file for editing.' },
   help: <Arg>{ key: '-h', value: false, help: 'Show this help.' },
 }
 
@@ -42,20 +43,19 @@ const main = () => {
   }
 
   let style;
-  if (args.style.value) {
+  if (args.config.value) {
     try {
-      style = JSON.parse(fs.readFileSync(args.style.value as string, 'utf8'));
+      style = JSON.parse(fs.readFileSync(args.config.value as string, 'utf8'));
     } catch (e) {
-      errorLog(`Error in ${args.style.value}: ${e}`);
+      errorLog(`Error in ${args.config.value}: ${e}`);
       return;
     }
   }
 
-  if (args.exportStyle.value) {
+  if (args.exportConfig.value) {
     const defaultStyleDoc = new PdfWriter();
-    const styleFile = 'apibake-style.json';
-    fs.writeFileSync(styleFile, JSON.stringify(defaultStyleDoc.style, null, 2));
-    log(`Default style exported into ${styleFile}`);
+    fs.writeFileSync(configFile, JSON.stringify(defaultStyleDoc.style, null, 2));
+    log(`Default config exported into ${configFile}`);
     return;
   }
 

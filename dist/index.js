@@ -37,13 +37,14 @@ const yaml_1 = __importDefault(require("yaml"));
 const string_utils_1 = require("./string-utils");
 const arg_parser_1 = require("./arg-parser");
 const packageJson = require('../package.json');
+const configFile = 'apibake-config.json';
 const args = {
     output: { key: '-out', value: 'output.pdf', help: 'Output PDF file name.' },
     title: { key: '-title', value: 'API Spec', help: 'Document title.' },
     subtitle: { key: '-subtitle', value: '', help: 'Document sub title.' },
     separateSchemas: { key: '-separate-schemas', value: false, help: 'When multiple API files parsed, create separate schemas section for each.' },
-    style: { key: '-style', value: '', help: 'Path to apibake-style.json. See -export-style.' },
-    exportStyle: { key: '-export-style', value: false, help: 'Save default document style into json file for editing.' },
+    config: { key: '-config', value: '', help: `Path to ${configFile}. See -export-config.` },
+    exportConfig: { key: '-export-config', value: false, help: 'Save default config into json file for editing.' },
     help: { key: '-h', value: false, help: 'Show this help.' },
 };
 const argsParser = new arg_parser_1.ArgsParser(args);
@@ -63,20 +64,19 @@ const main = () => {
         return;
     }
     let style;
-    if (args.style.value) {
+    if (args.config.value) {
         try {
-            style = JSON.parse(fs_1.default.readFileSync(args.style.value, 'utf8'));
+            style = JSON.parse(fs_1.default.readFileSync(args.config.value, 'utf8'));
         }
         catch (e) {
-            (0, logger_1.errorLog)(`Error in ${args.style.value}: ${e}`);
+            (0, logger_1.errorLog)(`Error in ${args.config.value}: ${e}`);
             return;
         }
     }
-    if (args.exportStyle.value) {
+    if (args.exportConfig.value) {
         const defaultStyleDoc = new pdf_writer_1.PdfWriter();
-        const styleFile = 'apibake-style.json';
-        fs_1.default.writeFileSync(styleFile, JSON.stringify(defaultStyleDoc.style, null, 2));
-        (0, logger_1.log)(`Default style exported into ${styleFile}`);
+        fs_1.default.writeFileSync(configFile, JSON.stringify(defaultStyleDoc.style, null, 2));
+        (0, logger_1.log)(`Default config exported into ${configFile}`);
         return;
     }
     const outputFile = args.output.value;
