@@ -49,7 +49,7 @@ const args = {
 };
 const argsParser = new arg_parser_1.ArgsParser(args);
 const printUsageHelp = () => {
-    (0, logger_1.log)(`ApiBake ${packageJson.version} - REST API to PDF.`);
+    (0, logger_1.log)(`ApiBake ${packageJson.version} - Convert OpenAPI spec to PDF.`);
     (0, logger_1.log)('Usage: apibake <openapi.json|.yaml|folder-name> [<file-or-folder2> <file-or-folder3> ...] [<options>]');
     (0, logger_1.log)('Options:');
     argsParser.printArgUsage();
