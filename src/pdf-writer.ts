@@ -153,39 +153,48 @@ export class PdfWriter {
   }
 
   header(level: number, str: string, anchor?: string) {
-    const doc = this.doc;
-
     this.styledText(str, 
       { fillColor: this.style.color.headers, font: EFont.BOLD, fontSize: this.style.font.baseSize + 4 - level * 2, lineGap: this.headerGap - level * 3 }, 
       { destination: anchor }
     );
+    this.addOutline(level, str);
+  }
 
+  apiMethod(method: string, endpoint: string, headerLevel: number) {
+    this.withStyle({ font: EFont.BOLD, fontSize: this.style.font.baseSize + 2, lineGap: this.headerGap - headerLevel * 3 }, () => {
+      this.styledText(method, { fillColor: this.style.color.highlight }, { continued: true });
+      this.styledText(` ${endpoint}`, { fillColor: this.style.color.headers });
+    });
+    this.addOutline(headerLevel, `${method} ${endpoint}`);
+  }
+
+  private addOutline(level: number, str: string) {
     let newOutline;
     const outlinesLen = this.docOutlines.length;
-    let headerLevelError = false;
+    let levelError = false;
 
     // debugLog(`header: level=${level}, text="${text}"`);
 
     if (level === 0) {
-      newOutline = doc.outline.addItem(str);
+      newOutline = this.doc.outline.addItem(str);
     } else if (level > 0 && level <= outlinesLen) {
       newOutline = this.docOutlines[level - 1].addItem(str);
     } else {
-      headerLevelError = true;
+      levelError = true;
     }
     
-    if (!headerLevelError) {
+    if (!levelError) {
       if (level === outlinesLen) {
         this.docOutlines.push(newOutline);
       } else if (level < outlinesLen) {
         this.docOutlines[level] = newOutline;
         this.docOutlines.splice(level + 1); // remore remainings
       } else if (level > outlinesLen) {
-        headerLevelError = true;
+        levelError = true;
       }
     }
 
-    if (headerLevelError) {
+    if (levelError) {
       throw new Error(`A header can only be nested inside headers with level - 1. level=${level}, previousLevel=${outlinesLen-1}`);
     }
   }

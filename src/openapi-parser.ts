@@ -106,9 +106,8 @@ export class OpenApiParser {
 
   private parsePath(path: string, pathSpec: ApiSpec) {
     Object.entries(pathSpec).forEach(([methodName, methodSpec]) => {
-      const endpoint = `${methodName.toUpperCase()} ${path}`;
-      log(` - ${endpoint}`);
-      this.doc.header(this.firstHeaderLevel + 1, endpoint);
+      log(` - ${methodName.toUpperCase()} ${path}`);
+      this.doc.apiMethod(methodName.toUpperCase(), path, this.firstHeaderLevel + 1);
       this.parseMethod(methodSpec);
       this.doc.lineBreak(2);
     });
