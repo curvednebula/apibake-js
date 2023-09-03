@@ -328,7 +328,7 @@ export class PdfWriter {
   example(name: string, body: string) {
     this.text(`Example "${name}":`, { font: EFont.BOLD });
     this.lineBreak(this.paraGap);
-    this.text(body, { fillColor: this.style.color.highlight, fontSize: this.style.font.baseSize - 2, font: EFont.MONOSPACED });
+    this.text(body, { fillColor: this.style.color.secondary, fontSize: this.style.font.baseSize - 2, font: EFont.MONOSPACED });
   }
 
   enumValues(values: string[]) {
