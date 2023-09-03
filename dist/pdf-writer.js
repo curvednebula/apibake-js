@@ -178,7 +178,7 @@ class PdfWriter {
             this.text(fieldName, { continued: fieldType ? true : false });
             if (fieldType) {
                 this.text(': ', { continued: true });
-                this.styledText(fieldType, { fillColor: this.colorAccent }, {
+                this.styledText(`${fieldType};`, { fillColor: this.colorAccent }, {
                     goTo: (_c = field.type) === null || _c === void 0 ? void 0 : _c.anchor,
                     underline: ((_d = field.type) === null || _d === void 0 ? void 0 : _d.anchor) ? true : false
                 });
@@ -201,10 +201,16 @@ class PdfWriter {
         this.styledText(typeName, { fillColor: this.colorAccent });
     }
     enumValues(values) {
-        this.text('Values: ', { continued: true });
+        this.text('Values: ');
+        this.doc.moveUp();
+        const nextLineIndent = this.doc.x + this.indentStep;
+        const indent = this.doc.widthOfString('Values: ') - this.indentStep;
         values.forEach((value, index, array) => {
             const str = (index < array.length - 1) ? `${value}, ` : value;
             const continued = (index < array.length - 1) ? true : false;
+            if (index === 0) {
+                this.text(str, { x: nextLineIndent, indent, continued });
+            }
             this.text(str, { continued });
         });
     }
