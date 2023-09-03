@@ -64,7 +64,7 @@ class OpenApiParser {
         if (paths && Object.entries(paths).length > 0) {
             (0, logger_1.log)('Endpoints:');
             Object.entries(paths).forEach(([key, value]) => {
-                this.writePath(key, value);
+                this.parsePath(key, value);
             });
         }
         const schemas = (_b = this.spec['components']) === null || _b === void 0 ? void 0 : _b['schemas'];
@@ -73,27 +73,26 @@ class OpenApiParser {
                 this.saveSchemasToParseLater(schemas);
             }
             else {
-                this.writeSchemas(schemas);
+                this.parseSchemas(schemas);
             }
         }
     }
     // if we parse multiple api spec files - done() shoud be called only once in the end
     done() {
         if (this.mergeSchemasInOneSection && Object.entries(this.schemas).length > 0) {
-            this.writeSchemas(this.schemas);
+            this.parseSchemas(this.schemas);
         }
         this.doc.finish();
     }
-    writePath(path, pathSpec) {
+    parsePath(path, pathSpec) {
         Object.entries(pathSpec).forEach(([methodName, methodSpec]) => {
-            const endpoint = `${methodName.toUpperCase()} ${path}`;
-            (0, logger_1.log)(` - ${endpoint}`);
-            this.doc.header(this.firstHeaderLevel + 1, endpoint);
-            this.writeMethod(methodSpec);
+            (0, logger_1.log)(` - ${methodName.toUpperCase()} ${path}`);
+            this.doc.apiHeader(methodName.toUpperCase(), path, this.firstHeaderLevel + 1);
+            this.parseMethod(methodSpec);
             this.doc.lineBreak(2);
         });
     }
-    writeMethod(methodSpec) {
+    parseMethod(methodSpec) {
         const parameters = methodSpec['parameters'];
         if (parameters && Object.keys(parameters).length > 0) {
             this.doc.subHeader('Request Parameters:');
@@ -101,7 +100,7 @@ class OpenApiParser {
             this.doc.indentStart();
             const uniqParams = parameters;
             uniqParams.forEach((param) => {
-                this.writeParameter(param);
+                this.parseParameter(param);
             });
             this.doc.indentEnd();
             this.doc.lineBreak();
@@ -110,7 +109,7 @@ class OpenApiParser {
         if (body && Object.keys(body).length > 0) {
             this.doc.subHeader('Request Body:');
             this.doc.indentStart();
-            this.writeBody(body);
+            this.parseBody(body);
             this.doc.indentEnd();
         }
         const responses = methodSpec['responses'];
@@ -118,13 +117,12 @@ class OpenApiParser {
             Object.entries(responses).forEach(([key, value]) => {
                 this.doc.subHeader(`Response ${key}:`);
                 this.doc.indentStart();
-                this.writeBody(value);
+                this.parseBody(value);
                 this.doc.indentEnd();
             });
         }
     }
-    writeBody(bodySpec) {
-        var _a, _b;
+    parseBody(bodySpec) {
         const descr = bodySpec['description'];
         if (descr) {
             this.doc.description((0, string_utils_1.sanitizeDescription)(descr));
@@ -133,16 +131,16 @@ class OpenApiParser {
         const contentSpec = bodySpec['content'];
         let emptyBody = true;
         if (contentSpec) {
-            const content = this.getFirstOf(contentSpec, ['application/json', 'multipart/form-data']);
-            if (content) {
-                const schemaRef = content.spec['schema'];
+            Object.entries(contentSpec).forEach(([contentType, spec]) => {
+                var _a, _b;
+                const schemaRef = spec['schema'];
                 if (schemaRef) {
                     const schema = this.parseSchemaRef(schemaRef);
                     const schemaSpec = (_b = (_a = this.spec['components']) === null || _a === void 0 ? void 0 : _a['schemas']) === null || _b === void 0 ? void 0 : _b[schema.schemaName];
-                    this.writeSchema(schemaSpec, schema.text);
+                    this.parseSchema(schemaSpec, schema.text, contentType);
                     emptyBody = false;
                 }
-            }
+            });
         }
         if (emptyBody) {
             this.doc.para('Empty body.');
@@ -159,7 +157,7 @@ class OpenApiParser {
             }
         });
     }
-    writeSchemas(schemas) {
+    parseSchemas(schemas) {
         (0, logger_1.log)('Schemas:');
         const headerLevel = this.mergeSchemasInOneSection ? this.firstHeaderLevel : this.firstHeaderLevel + 1;
         this.doc.newSection('Schemas');
@@ -167,14 +165,14 @@ class OpenApiParser {
         Object.entries(schemas).forEach(([key, value]) => {
             (0, logger_1.log)(` - ${key}`);
             this.doc.header(headerLevel + 1, key, this.schemaAnchor(key));
-            this.writeSchema(value);
+            this.parseSchema(value);
             this.doc.lineBreak(2);
         });
     }
-    writeSchema(schemaSpec, name) {
+    parseSchema(schemaSpec, name, contentType) {
         const typeName = name !== null && name !== void 0 ? name : schemaSpec === null || schemaSpec === void 0 ? void 0 : schemaSpec['type'];
         if (typeName !== 'object') {
-            this.doc.schemaType(typeName);
+            this.doc.schemaType(typeName, contentType);
         }
         if (!schemaSpec) {
             return;
@@ -187,7 +185,7 @@ class OpenApiParser {
                 const typeRef = this.parseSchemaRef(value);
                 dataFields.push(new DataField(key, typeRef, value['description'], required === null || required === void 0 ? void 0 : required.includes(key)));
             });
-            this.doc.object(dataFields);
+            this.doc.objectSchema(dataFields);
         }
         else if (schemaSpec['enum']) {
             this.doc.lineBreak(0.5);
@@ -227,7 +225,7 @@ class OpenApiParser {
         }
         return SchemaRef.undefined();
     }
-    writeParameter(paramSpec) {
+    parseParameter(paramSpec) {
         if (paramSpec['name']) {
             let typeRef = undefined;
             if (paramSpec['schema'] != null) {
