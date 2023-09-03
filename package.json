@@ -1,7 +1,7 @@
 {
   "name": "apibake",
   "version": "0.1.9",
-  "description": "OpenAPI to PDF generator.",
+  "description": "Convert OpenAPI spec to PDF.",
   "keywords": [
     "OpenAPI",
     "Open API",
