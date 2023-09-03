@@ -42,7 +42,7 @@ const args = {
     title: { key: '-title', value: 'API Spec', help: 'Document title.' },
     subtitle: { key: '-subtitle', value: '', help: 'Document sub title.' },
     separateSchemas: { key: '-separate-schemas', value: false, help: 'When multiple API files parsed, create separate schemas section for each.' },
-    style: { key: '-style', value: '', help: 'Path to style.json. See -export-style.' },
+    style: { key: '-style', value: '', help: 'Path to apibake-style.json. See -export-style.' },
     exportStyle: { key: '-export-style', value: false, help: 'Save default document style into json file for editing.' },
     help: { key: '-h', value: false, help: 'Show this help.' },
 };
@@ -82,7 +82,7 @@ const main = () => {
     const outputFile = args.output.value;
     const doc = new pdf_writer_1.PdfWriter(outputFile, style);
     if (argsParser.rest.length === 0) {
-        (0, logger_1.log)('No .json or .yaml files specified.\n');
+        printUsageHelp();
         return;
     }
     doc.addTitlePage(args.title.value, args.subtitle.value, (0, moment_1.default)().format('YYYY-MM-DD'));

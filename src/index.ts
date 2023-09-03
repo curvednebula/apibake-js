@@ -63,7 +63,7 @@ const main = () => {
   const doc = new PdfWriter(outputFile, style);
 
   if (argsParser.rest.length === 0) {
-    log('No .json or .yaml files specified.\n');
+    printUsageHelp();
     return;
   }
 
