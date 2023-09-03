@@ -43,7 +43,7 @@ const args = {
     subtitle: { key: '-subtitle', value: '', help: 'Document sub title.' },
     separateSchemas: { key: '-separate-schemas', value: false, help: 'When multiple API files parsed, create separate schemas section for each.' },
     style: { key: '-style', value: '', help: 'Path to style.json. See -export-style.' },
-    exportStyle: { key: '-export-style', value: false, help: 'Save default document style into style.json for editing.' },
+    exportStyle: { key: '-export-style', value: false, help: 'Save default document style into json file for editing.' },
     help: { key: '-h', value: false, help: 'Show this help.' },
 };
 const argsParser = new arg_parser_1.ArgsParser(args);
@@ -72,11 +72,15 @@ const main = () => {
             return;
         }
     }
+    if (args.exportStyle.value) {
+        const defaultStyleDoc = new pdf_writer_1.PdfWriter();
+        const styleFile = 'apibake-style.json';
+        fs_1.default.writeFileSync(styleFile, JSON.stringify(defaultStyleDoc.style, null, 2));
+        (0, logger_1.log)(`Default style exported into ${styleFile}`);
+        return;
+    }
     const outputFile = args.output.value;
     const doc = new pdf_writer_1.PdfWriter(outputFile, style);
-    if (args.exportStyle.value) {
-        fs_1.default.writeFileSync('style.json', JSON.stringify(doc.style, null, 2));
-    }
     if (argsParser.rest.length === 0) {
         (0, logger_1.log)('No .json or .yaml files specified.\n');
         return;

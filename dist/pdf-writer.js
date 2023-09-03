@@ -77,8 +77,10 @@ class PdfWriter {
                 bottom: this.style.format.verticalMargin
             }
         });
-        const writeStream = fs_1.default.createWriteStream(outputFilePath);
-        this.doc.pipe(writeStream);
+        if (outputFilePath) {
+            const writeStream = fs_1.default.createWriteStream(outputFilePath);
+            this.doc.pipe(writeStream);
+        }
         // NOTE: it is impossible to edit pages in pageAdded as it is sometimes invoked after one text already placed on the page
         // which produces unexpected formatting issues
         this.doc.on('pageAdded', () => {

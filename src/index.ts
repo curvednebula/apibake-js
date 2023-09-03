@@ -16,8 +16,8 @@ const args = {
   title: <Arg>{ key: '-title', value: 'API Spec', help: 'Document title.' },
   subtitle: <Arg>{ key: '-subtitle', value: '', help: 'Document sub title.' },
   separateSchemas: <Arg>{ key: '-separate-schemas', value: false, help: 'When multiple API files parsed, create separate schemas section for each.' },
-  style: <Arg>{ key: '-style', value: '', help: 'Path to style.json. See -export-style.' },
-  exportStyle: <Arg>{ key: '-export-style', value: false, help: 'Save default document style into style.json for editing.' },
+  style: <Arg>{ key: '-style', value: '', help: 'Path to apibake-style.json. See -export-style.' },
+  exportStyle: <Arg>{ key: '-export-style', value: false, help: 'Save default document style into json file for editing.' },
   help: <Arg>{ key: '-h', value: false, help: 'Show this help.' },
 }
 
@@ -51,12 +51,16 @@ const main = () => {
     }
   }
 
+  if (args.exportStyle.value) {
+    const defaultStyleDoc = new PdfWriter();
+    const styleFile = 'apibake-style.json';
+    fs.writeFileSync(styleFile, JSON.stringify(defaultStyleDoc.style, null, 2));
+    log(`Default style exported into ${styleFile}`);
+    return;
+  }
+
   const outputFile = args.output.value as string;
   const doc = new PdfWriter(outputFile, style);
-
-  if (args.exportStyle.value) {
-    fs.writeFileSync('style.json', JSON.stringify(doc.style, null, 2));
-  }
 
   if (argsParser.rest.length === 0) {
     log('No .json or .yaml files specified.\n');

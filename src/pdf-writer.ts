@@ -87,7 +87,7 @@ export class PdfWriter {
     lineGap: 0,
   };
 
-  constructor(outputFilePath: string, style?: any) {
+  constructor(outputFilePath?: string, style?: any) {
     if (style) {
       this.style = style; // external style
     }
@@ -104,8 +104,10 @@ export class PdfWriter {
       }
     });
 
-    const writeStream = fs.createWriteStream(outputFilePath);
-    this.doc.pipe(writeStream);
+    if (outputFilePath) {
+      const writeStream = fs.createWriteStream(outputFilePath);
+      this.doc.pipe(writeStream);
+    }
 
     // NOTE: it is impossible to edit pages in pageAdded as it is sometimes invoked after one text already placed on the page
     // which produces unexpected formatting issues
