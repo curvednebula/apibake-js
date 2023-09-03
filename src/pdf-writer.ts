@@ -39,6 +39,13 @@ export class PdfWriter {
       highlight: '#8A3324',
       headers: '#2A4D69',
       subHeaders: '#4B86B4',
+
+      getMethod: '#4A90E2',
+      putMethod: '#6B8E23',
+      postMethod: '#D87F0A',
+      patchMethod: '#C2A000',
+      deleteMethod: '#D0021B',
+      otherMethod: '#2A4D69'
     },
     font: {
       baseSize: 10,
@@ -172,10 +179,35 @@ export class PdfWriter {
     this.addOutline(level, str);
   }
 
-  apiMethod(method: string, endpoint: string, headerLevel: number) {
-    this.withStyle({ font: EFont.BOLD, fontSize: this.style.font.baseSize + 2, lineGap: this.headerGap - headerLevel * 3 }, () => {
-      this.text(method, { fillColor: this.style.color.highlight }, { continued: true });
-      this.text(` ${endpoint}`, { fillColor: this.style.color.headers });
+  apiHeader(method: string, endpoint: string, headerLevel: number) {
+    const fontSize = this.style.font.baseSize + 2;
+
+    const colorByMethod: Record<string, string> = {
+      'get': this.style.color.getMethod,
+      'put': this.style.color.putMethod,
+      'post': this.style.color.postMethod,
+      'patch': this.style.color.patchMethod,
+      'delete': this.style.color.deleteMethod,
+    };
+    
+    this.withStyle({ font: EFont.BOLD, fontSize }, () => {
+      const width = this.doc.widthOfString(method);
+      const height = this.doc.heightOfString(method);
+      const color = colorByMethod[method.toLowerCase()] ?? this.style.color.otherMethod;
+
+      // bugfix: make sure we are already on a new page if needed - to dray rect correctly 
+      this.text(method, {}, { continued: true });
+      this.text(' ');
+      this.doc.moveUp();
+
+      this.doc
+        .lineJoin('round').lineWidth(4)
+        .rect(this.doc.x, this.doc.y - fontSize / 4, width, height)
+        .fillAndStroke(color, color);
+      
+      this.text(method, { fillColor: 'white' }, { continued: true });
+      this.text(`  ${endpoint}`, { fillColor: this.style.color.headers });
+      this.doc.moveDown(0.7);
     });
     this.addOutline(headerLevel, `${method} ${endpoint}`);
   }
