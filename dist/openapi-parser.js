@@ -202,9 +202,7 @@ class OpenApiParser {
             this.doc.objectSchema(dataFields);
         }
         else if (schemaSpec['enum']) {
-            this.doc.lineBreak(0.5);
-            const values = schemaSpec['enum'];
-            this.doc.enumValues(values);
+            this.doc.enumValues(schemaSpec['enum']);
         }
     }
     schemaNameByRef(ref) {

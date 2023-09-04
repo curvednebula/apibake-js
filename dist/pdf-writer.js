@@ -289,7 +289,9 @@ class PdfWriter {
                 if (index === 0) {
                     this.text(str, {}, { x: nextLineIndent, indent, continued });
                 }
-                this.text(str, {}, { continued });
+                else {
+                    this.text(str, {}, { continued });
+                }
             });
         });
     }
