@@ -17,6 +17,7 @@
   ],
   "author": "Illya Sikeryn",
   "license": "MIT",
+  "homepage": "https://curvednebula.com/docbaker/",
   "repository": {
     "type": "git",
     "url": "https://github.com/curvednebula/apibake-js"
