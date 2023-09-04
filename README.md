@@ -34,13 +34,14 @@ Combine several OpenAPI specs into one PDF:
 
 ```
 apibake api1.json api2.yaml -title 'REST API Spec'
+apibake dir/with/openapi-specs -title 'REST API Spec'
 ```
 
 Custom config (colors, margins, font size):
 
 ```
 apibake -export-config
-apibake -config apibake-config.json api1.json -title 'REST API Spec'
+apibake api1.json -title 'REST API Spec' -config apibake-config.json
 ```
 
 # MIT License
