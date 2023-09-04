@@ -241,11 +241,9 @@ export class OpenApiParser {
       });
       
       this.doc.objectSchema(dataFields);
-    }
+    } 
     else if (schemaSpec['enum']) {
-      this.doc.lineBreak(0.5);
-      const values = schemaSpec['enum'] as string[];
-      this.doc.enumValues(values);
+      this.doc.enumValues(schemaSpec['enum'] as string[]);
     }
   }
 

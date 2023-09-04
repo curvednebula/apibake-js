@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { DataField, SchemaRef } from './openapi-parser';
+import { DataField } from './openapi-parser';
 const PDFDocument = require('pdfkit');
 
 interface TextStyle {
@@ -343,8 +343,9 @@ export class PdfWriter {
         const continued = (index < array.length - 1) ? true : false;
         if (index === 0) {
           this.text(str, {}, { x: nextLineIndent, indent, continued });
+        } else {
+          this.text(str, {}, { continued });
         }
-        this.text(str, {}, { continued });
       });
     });
   }
