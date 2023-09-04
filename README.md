@@ -43,10 +43,6 @@ apibake -export-config
 apibake -config apibake-config.json api1.json -title 'REST API Spec'
 ```
 
-
-
-
-
 # MIT License
 
 Copyright (c) 2023 CurvedNebula.com
