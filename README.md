@@ -40,13 +40,9 @@ Custom config (colors, margins, font size):
 
 ```
 apibake -export-config
-```
-
-... after editing apibake-config.json:
-
-```
 apibake -config apibake-config.json api1.json -title 'REST API Spec'
 ```
+
 
 
 
