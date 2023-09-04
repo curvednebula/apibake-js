@@ -79,12 +79,12 @@ const main = () => {
         (0, logger_1.log)(`Default config exported into ${configFile}`);
         return;
     }
-    const outputFile = args.output.value;
-    const doc = new pdf_writer_1.PdfWriter(outputFile, style);
     if (argsParser.rest.length === 0) {
         printUsageHelp();
         return;
     }
+    const outputFile = args.output.value;
+    const doc = new pdf_writer_1.PdfWriter(outputFile, style);
     doc.addTitlePage(args.title.value, args.subtitle.value, (0, moment_1.default)().format('YYYY-MM-DD'));
     const errorMessages = [];
     const allFiles = [];

@@ -59,13 +59,13 @@ const main = () => {
     return;
   }
 
-  const outputFile = args.output.value as string;
-  const doc = new PdfWriter(outputFile, style);
-
   if (argsParser.rest.length === 0) {
     printUsageHelp();
     return;
   }
+
+  const outputFile = args.output.value as string;
+  const doc = new PdfWriter(outputFile, style);
 
   doc.addTitlePage(
     args.title.value as string, 
