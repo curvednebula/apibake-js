@@ -13,13 +13,13 @@ const packageJson = require('../package.json');
 const configFile = 'apibake-config.json';
 
 const args = {
-  output: <Arg>{ key: '-out', value: 'output.pdf', help: 'Output PDF file name.' },
-  title: <Arg>{ key: '-title', value: 'API Spec', help: 'Document title.' },
-  subtitle: <Arg>{ key: '-subtitle', value: '', help: 'Document sub title.' },
-  separateSchemas: <Arg>{ key: '-separate-schemas', value: false, help: 'When multiple API files parsed, create separate schemas section for each.' },
-  config: <Arg>{ key: '-config', value: '', help: `Path to ${configFile}. See -export-config.` },
-  exportConfig: <Arg>{ key: '-export-config', value: false, help: 'Save default config into json file for editing.' },
-  help: <Arg>{ key: '-h', value: false, help: 'Show this help.' },
+  output: <Arg>{ key: 'out', value: 'output.pdf', help: 'Output PDF file name.' },
+  title: <Arg>{ key: 'title', value: 'API Spec', help: 'Document title.' },
+  subtitle: <Arg>{ key: 'subtitle', value: '', help: 'Document sub title.' },
+  separateSchemas: <Arg>{ key: 'separate-schemas', value: false, help: 'When multiple API files parsed, create separate schemas section for each.' },
+  config: <Arg>{ key: 'config', value: '', help: `Path to ${configFile}. See --export-config.` },
+  exportConfig: <Arg>{ key: 'export-config', value: false, help: 'Save default config into json file for editing.' },
+  help: <Arg>{ key: 'h', value: false, help: 'Show this help.' },
 }
 
 const argsParser = new ArgsParser(args);

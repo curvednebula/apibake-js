@@ -20,7 +20,8 @@ export class ArgsParser {
       const arg = rawArgs[i];
   
       if (arg.startsWith('-')) {
-        const argObj = Object.values(this.args).find((a) => a.key === arg);
+        const argAfterHyphen = arg.startsWith('--') ? arg.substring(2) : arg.substring(1);
+        const argObj = Object.values(this.args).find((a) => a.key === argAfterHyphen);
         if (argObj) {
           const argValue = (i < rawArgs.length-1) ? rawArgs[i+1] : '';
           switch (typeof argObj.value) {
@@ -43,12 +44,12 @@ export class ArgsParser {
   printArgUsage() {
     Object.values(this.args).forEach((a) => {
       const needValue = typeof a.value !== 'boolean';
+      const hyphen = a.key.length == 1 ? '-' : '--';
       if (needValue) {
-        log(` ${a.key} <${typeof a.value}>: ${a.help}`);
+        log(` ${hyphen}${a.key} <${typeof a.value}>: ${a.help}`);
       } else {
-        log(` ${a.key}: ${a.help}`);
+        log(` ${hyphen}${a.key}: ${a.help}`);
       }
     });
   }
 }
-

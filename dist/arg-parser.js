@@ -13,7 +13,8 @@ class ArgsParser {
         for (let i = 0; i < rawArgs.length; i++) {
             const arg = rawArgs[i];
             if (arg.startsWith('-')) {
-                const argObj = Object.values(this.args).find((a) => a.key === arg);
+                const argAfterHyphen = arg.startsWith('--') ? arg.substring(2) : arg.substring(1);
+                const argObj = Object.values(this.args).find((a) => a.key === argAfterHyphen);
                 if (argObj) {
                     const argValue = (i < rawArgs.length - 1) ? rawArgs[i + 1] : '';
                     switch (typeof argObj.value) {
@@ -44,11 +45,12 @@ class ArgsParser {
     printArgUsage() {
         Object.values(this.args).forEach((a) => {
             const needValue = typeof a.value !== 'boolean';
+            const hyphen = a.key.length == 1 ? '-' : '--';
             if (needValue) {
-                (0, logger_1.log)(` ${a.key} <${typeof a.value}>: ${a.help}`);
+                (0, logger_1.log)(` ${hyphen}${a.key} <${typeof a.value}>: ${a.help}`);
             }
             else {
-                (0, logger_1.log)(` ${a.key}: ${a.help}`);
+                (0, logger_1.log)(` ${hyphen}${a.key}: ${a.help}`);
             }
         });
     }
