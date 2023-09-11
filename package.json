@@ -1,6 +1,6 @@
 {
   "name": "apibake",
-  "version": "0.1.18",
+  "version": "0.1.19",
   "description": "Convert OpenAPI spec to PDF.",
   "keywords": [
     "OpenAPI",
