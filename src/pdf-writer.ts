@@ -270,20 +270,6 @@ export class PdfWriter {
   dataFields(dataFields: DataField[]) {
     const origX = this.doc.x;
 
-    // const gap = 5;
-    // let nameAndTypeMaxWidth = 0;
-    
-    // dataFields.forEach((field) => {
-    //   let nameAndType = `${field.name}${(field.required ?? true) ? '':'?'}`;
-    //   if (field.type?.text) {
-    //     nameAndType += `: ${field.type?.text}`;
-    //   }
-    //   const width = this.doc.widthOfString(nameAndType);
-    //   if (nameAndTypeMaxWidth < width) {
-    //     nameAndTypeMaxWidth = width;
-    //   }
-    // });
-
     dataFields.forEach((field) => {
       const fieldName = `${field.name}${(field.required ?? true) ? '':'?'}`
       const fieldType = field.type?.text ? `${field.type?.text};`  : undefined;
