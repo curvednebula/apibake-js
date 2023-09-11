@@ -93,6 +93,10 @@ class OpenApiParser {
         });
     }
     parseMethod(methodSpec) {
+        const descr = methodSpec['description'];
+        if (descr) {
+            this.doc.description((0, string_utils_1.sanitizeDescription)(descr));
+        }
         const parameters = methodSpec['parameters'];
         if (parameters && Object.keys(parameters).length > 0) {
             this.doc.subHeader('Request Parameters:');
@@ -126,7 +130,6 @@ class OpenApiParser {
         const descr = bodySpec['description'];
         if (descr) {
             this.doc.description((0, string_utils_1.sanitizeDescription)(descr));
-            this.doc.lineBreak(0.5);
         }
         const contentSpec = bodySpec['content'];
         let emptyBody = true;

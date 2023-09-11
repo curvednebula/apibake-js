@@ -219,21 +219,10 @@ class PdfWriter {
     }
     description(str, options) {
         this.text(str, { fillColor: this.style.color.secondary }, options);
+        this.lineBreak(0.5);
     }
     dataFields(dataFields) {
         const origX = this.doc.x;
-        // const gap = 5;
-        // let nameAndTypeMaxWidth = 0;
-        // dataFields.forEach((field) => {
-        //   let nameAndType = `${field.name}${(field.required ?? true) ? '':'?'}`;
-        //   if (field.type?.text) {
-        //     nameAndType += `: ${field.type?.text}`;
-        //   }
-        //   const width = this.doc.widthOfString(nameAndType);
-        //   if (nameAndTypeMaxWidth < width) {
-        //     nameAndTypeMaxWidth = width;
-        //   }
-        // });
         dataFields.forEach((field) => {
             var _a, _b, _c, _d, _e;
             const fieldName = `${field.name}${((_a = field.required) !== null && _a !== void 0 ? _a : true) ? '' : '?'}`;
