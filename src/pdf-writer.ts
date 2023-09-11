@@ -262,8 +262,8 @@ export class PdfWriter {
     return this;
   }
 
-  description(str: string, options?: TextOptions) {
-    this.text(str, { fillColor: this.style.color.secondary }, options);
+  description(str: string) {
+    this.text(str, { fillColor: this.style.color.secondary });
     this.lineBreak(0.5);
   }
 

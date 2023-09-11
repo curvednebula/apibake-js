@@ -114,7 +114,11 @@ export class OpenApiParser {
   }
 
   private parseMethod(methodSpec: ApiSpec) {
+    const summary = methodSpec['summary'];
     const descr = methodSpec['description'];
+    if (summary) {
+      this.doc.description(sanitizeDescription(summary));
+    }
     if (descr) {
       this.doc.description(sanitizeDescription(descr));
     }
