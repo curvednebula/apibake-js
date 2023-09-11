@@ -93,7 +93,11 @@ class OpenApiParser {
         });
     }
     parseMethod(methodSpec) {
+        const summary = methodSpec['summary'];
         const descr = methodSpec['description'];
+        if (summary) {
+            this.doc.description((0, string_utils_1.sanitizeDescription)(summary));
+        }
         if (descr) {
             this.doc.description((0, string_utils_1.sanitizeDescription)(descr));
         }

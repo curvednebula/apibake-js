@@ -217,8 +217,8 @@ class PdfWriter {
         this.lineBreak(this.paraGap);
         return this;
     }
-    description(str, options) {
-        this.text(str, { fillColor: this.style.color.secondary }, options);
+    description(str) {
+        this.text(str, { fillColor: this.style.color.secondary });
         this.lineBreak(0.5);
     }
     dataFields(dataFields) {
