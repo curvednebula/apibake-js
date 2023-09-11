@@ -264,6 +264,7 @@ export class PdfWriter {
 
   description(str: string, options?: TextOptions) {
     this.text(str, { fillColor: this.style.color.secondary }, options);
+    this.lineBreak(0.5);
   }
 
   dataFields(dataFields: DataField[]) {

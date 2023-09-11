@@ -114,6 +114,11 @@ export class OpenApiParser {
   }
 
   private parseMethod(methodSpec: ApiSpec) {
+    const descr = methodSpec['description'];
+    if (descr) {
+      this.doc.description(sanitizeDescription(descr));
+    }
+
     const parameters = methodSpec['parameters'] as ApiSpec[];
 
     if (parameters && Object.keys(parameters).length > 0) {
@@ -153,7 +158,6 @@ export class OpenApiParser {
     const descr = bodySpec['description'] as string;
     if (descr) {
       this.doc.description(sanitizeDescription(descr));
-      this.doc.lineBreak(0.5);
     }
 
     const contentSpec = bodySpec['content'] as ApiSpec;
