@@ -37,7 +37,6 @@ apibake api1.json api2.yaml --title 'REST API Spec'
 apibake dir/with/openapi-specs --title 'REST API Spec'
 ```
 
-
 # Custom config: fonts, colors, page margins.
 
 To modify default apibake config - first export it into a file:
