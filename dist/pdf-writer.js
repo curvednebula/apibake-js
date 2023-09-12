@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PdfWriter = void 0;
 const fs_1 = __importDefault(require("fs"));
+const obj_utils_1 = require("./obj-utils");
 const PDFDocument = require('pdfkit');
 class Font {
     constructor(face, style) {
@@ -57,7 +58,7 @@ class PdfWriter {
         this.headerGap = 0.7;
         this.paraGap = 0.5;
         if (style) {
-            this.style = style; // external style
+            this.style = (0, obj_utils_1.deepOverride)(this.style, style);
         }
         this.baseStyle = {
             font: this.style.font.main.norm,

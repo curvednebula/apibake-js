@@ -1,5 +1,6 @@
 import fs from 'fs';
 import { DataField } from './openapi-parser';
+import { deepOverride } from './obj-utils';
 const PDFDocument = require('pdfkit');
 
 class Font {
@@ -39,7 +40,7 @@ export class PdfWriter {
       highlight: '#8A3324',
       headers: '#2A4D69',
       subHeaders: '#4B86B4',
-
+  
       getMethod: '#4A90E2',
       putMethod: '#6B8E23',
       postMethod: '#D87F0A',
@@ -65,7 +66,7 @@ export class PdfWriter {
       horizontalMargin: 70,
       verticalMargin: 50
     }
-  }
+  };
 
   private doc;
 
@@ -84,7 +85,7 @@ export class PdfWriter {
 
   constructor(outputFilePath?: string, style?: any) {
     if (style) {
-      this.style = style; // external style
+      this.style = deepOverride(this.style, style);
     }
 
     this.baseStyle = {

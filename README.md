@@ -75,6 +75,7 @@ Alternatively, external font files can be specified. Supported font formats: Tru
 Example:
 
 ```
+{
   "font": {
     "baseSize": 10,
     "main": {
@@ -99,10 +100,12 @@ Example:
         "face": "Courier-Oblique"
       }
     }
-  }
+  },
+  ...
+}
 ```
 
-Note: if font file is a collection (.ttc) font style must be also specified. Example:
+Note: if font file is a collection (.ttc) - then font style must be also specified. Example:
 
 ```
  "font": {
