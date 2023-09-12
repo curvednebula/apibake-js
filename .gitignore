@@ -39,3 +39,4 @@ yarn.lock
 
 test-data
 *.pdf
+apibake-config.json

@@ -27,7 +27,7 @@ apibake <openapi.json|.yaml|folder-name> [<file-or-folder2> <file-or-folder3> ..
 Specify title and subtitle for your PDF:
 
 ```
-apibake openapi.json --title 'REST API Spec' --subtitle 'created by ApiBake'
+apibake openapi.json --title 'REST API Spec' --subtitle 'created with ApiBake'
 ```
 
 Combine several OpenAPI specs into one PDF:

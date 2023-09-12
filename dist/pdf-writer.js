@@ -6,15 +6,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PdfWriter = void 0;
 const fs_1 = __importDefault(require("fs"));
 const PDFDocument = require('pdfkit');
-;
-var EFont;
-(function (EFont) {
-    EFont[EFont["NORM"] = 0] = "NORM";
-    EFont[EFont["BOLD"] = 1] = "BOLD";
-    EFont[EFont["ITALIC"] = 2] = "ITALIC";
-    EFont[EFont["BOLD_ITALIC"] = 3] = "BOLD_ITALIC";
-    EFont[EFont["MONOSPACED"] = 4] = "MONOSPACED";
-})(EFont || (EFont = {}));
+class Font {
+    constructor(face, style) {
+        this.face = face;
+        this.style = style;
+    }
+}
 ;
 class PdfWriter {
     constructor(outputFilePath, style) {
@@ -35,6 +32,16 @@ class PdfWriter {
             },
             font: {
                 baseSize: 10,
+                main: {
+                    norm: new Font('Helvetica'),
+                    bold: new Font('Helvetica-Bold'),
+                    italic: new Font('Helvetica-Oblique'),
+                },
+                mono: {
+                    norm: new Font('Courier'),
+                    bold: new Font('Courier-Bold'),
+                    italic: new Font('Courier-Oblique')
+                }
             },
             format: {
                 indentStep: 12,
@@ -47,17 +54,10 @@ class PdfWriter {
         this.pageHeaderNodes = [];
         this.docOutlines = [];
         this.styleStack = [];
-        this.fonts = [
-            'Helvetica',
-            'Helvetica-Bold',
-            'Helvetica-Oblique',
-            'Helvetica-BoldOblique',
-            'Courier-Bold'
-        ];
         this.headerGap = 0.7;
         this.paraGap = 0.5;
         this.baseStyle = {
-            font: EFont.NORM,
+            font: this.style.font.main.norm,
             fontSize: this.style.font.baseSize,
             fillColor: this.style.color.main,
             leftMargin: this.style.format.horizontalMargin,
@@ -92,14 +92,14 @@ class PdfWriter {
         // NOTE: font sizes on the title screen don't depent on base fontSize
         this.doc.addPage();
         this.doc.y = this.doc.page.height * 0.3;
-        this.text(title, { font: EFont.BOLD, fontSize: 20 }, { align: 'center' });
-        this.lineBreak(1);
+        this.text(title, { font: this.style.font.main.bold, fontSize: 20 }, { align: 'center' });
         if (subtitle) {
-            this.text(subtitle, { font: EFont.NORM, fontSize: 14 }, { align: 'center' });
             this.lineBreak(0.5);
+            this.text(subtitle, { fontSize: 14 }, { align: 'center' });
         }
         if (date) {
-            this.text(date, { font: EFont.NORM, fontSize: 12, fillColor: this.style.color.secondary }, { align: 'center' });
+            this.lineBreak(3);
+            this.text(date, { fontSize: 12, fillColor: this.style.color.secondary }, { align: 'center' });
         }
     }
     newSection(name) {
@@ -142,7 +142,7 @@ class PdfWriter {
         return this;
     }
     header(level, str, anchor) {
-        this.withStyle({ fillColor: this.style.color.headers, font: EFont.BOLD, fontSize: this.style.font.baseSize + 4 - level * 2 }, () => {
+        this.withStyle({ fillColor: this.style.color.headers, font: this.style.font.main.bold, fontSize: this.style.font.baseSize + 4 - level * 2 }, () => {
             this.text(str, {}, { destination: anchor });
             this.lineBreak(this.headerGap);
         });
@@ -157,7 +157,7 @@ class PdfWriter {
             'patch': this.style.color.patchMethod,
             'delete': this.style.color.deleteMethod,
         };
-        this.withStyle({ font: EFont.BOLD, fontSize }, () => {
+        this.withStyle({ font: this.style.font.main.bold, fontSize }, () => {
             var _a;
             const width = this.doc.widthOfString(method);
             const height = this.doc.heightOfString(method);
@@ -207,7 +207,7 @@ class PdfWriter {
         }
     }
     subHeader(str) {
-        this.withStyle({ fillColor: this.style.color.subHeaders, font: EFont.BOLD, fontSize: this.style.font.baseSize }, () => {
+        this.withStyle({ fillColor: this.style.color.subHeaders, font: this.style.font.main.bold, fontSize: this.style.font.baseSize }, () => {
             this.text(str);
             this.lineBreak(this.headerGap);
         });
@@ -262,9 +262,9 @@ class PdfWriter {
         this.indentEnd().text('}');
     }
     example(name, body) {
-        this.text(`Example "${name}":`, { font: EFont.BOLD });
+        this.text(`Example "${name}":`, { font: this.style.font.main.bold });
         this.lineBreak(this.paraGap);
-        this.text(body, { fillColor: this.style.color.secondary, fontSize: this.style.font.baseSize - 2, font: EFont.MONOSPACED });
+        this.text(body, { fillColor: this.style.color.secondary, fontSize: this.style.font.baseSize - 2, font: this.style.font.mono.bold });
     }
     enumValues(values) {
         this.text('Values: ');
@@ -295,7 +295,7 @@ class PdfWriter {
             doc.page.margins.top = 0;
             doc.page.margins.bottom = 0;
             if (i > 0) {
-                this.withStyle({ font: EFont.NORM, fontSize: 9, fillColor: this.style.color.secondary }, () => {
+                this.withStyle({ fontSize: 9, fillColor: this.style.color.secondary }, () => {
                     if (this.pageHeaderNodes[i]) {
                         this.text(this.pageHeaderNodes[i], {}, { y: origTop / 2, align: 'right' });
                     }
@@ -309,7 +309,7 @@ class PdfWriter {
     }
     setStyle(style) {
         var _a;
-        this.doc.font(this.fonts[(_a = style.font) !== null && _a !== void 0 ? _a : 0]).fontSize(style.fontSize).fillColor(style.fillColor);
+        this.doc.font(style.font.face, ((_a = style.font) === null || _a === void 0 ? void 0 : _a.style) || undefined).fontSize(style.fontSize).fillColor(style.fillColor);
     }
     resetStyle() {
         this.styleStack = [];

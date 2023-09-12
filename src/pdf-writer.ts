@@ -2,15 +2,22 @@ import fs from 'fs';
 import { DataField } from './openapi-parser';
 const PDFDocument = require('pdfkit');
 
-interface TextStyle {
-  font?: EFont;
+class Font {
+  constructor(
+    public face: string,
+    public style?: string
+  ) {}
+}
+
+interface ITextStyle {
+  font?: Font;
   fontSize?: number;
   fillColor?: string;
   leftMargin?: number;
   lineGap?: number;
 }
 
-interface TextOptions {
+interface ITextOptions {
   continued?: boolean;
   lineBreak?: boolean;
   underline?: boolean;
@@ -20,14 +27,6 @@ interface TextOptions {
   align?: string;
   x?: number;
   y?: number;
-};
-
-enum EFont {
-  NORM = 0,
-  BOLD = 1,
-  ITALIC = 2,
-  BOLD_ITALIC = 3,
-  MONOSPACED = 4
 };
 
 export class PdfWriter {
@@ -50,6 +49,16 @@ export class PdfWriter {
     },
     font: {
       baseSize: 10,
+      main: {
+        norm: new Font('Helvetica'),
+        bold: new Font('Helvetica-Bold'),
+        italic: new Font('Helvetica-Oblique'),
+      },
+      mono: { 
+        norm: new Font('Courier'),
+        bold: new Font('Courier-Bold'),
+        italic: new Font('Courier-Oblique')
+      }
     },
     format: {
       indentStep: 12,
@@ -66,21 +75,13 @@ export class PdfWriter {
   private pageHeaderNodes: string[] = []; 
 
   private docOutlines: any[] = [];
-  private styleStack: TextStyle[] = [];
-
-  private fonts = [
-    'Helvetica',
-    'Helvetica-Bold',
-    'Helvetica-Oblique',
-    'Helvetica-BoldOblique',
-    'Courier-Bold'
-  ];
+  private styleStack: ITextStyle[] = [];
 
   private headerGap = 0.7;
   private paraGap = 0.5;
 
-  private baseStyle: TextStyle = {
-    font: EFont.NORM,
+  private baseStyle: ITextStyle = {
+    font: this.style.font.main.norm,
     fontSize: this.style.font.baseSize,
     fillColor: this.style.color.main,
     leftMargin: this.style.format.horizontalMargin,
@@ -121,16 +122,16 @@ export class PdfWriter {
     // NOTE: font sizes on the title screen don't depent on base fontSize
     this.doc.addPage();
     this.doc.y = this.doc.page.height * 0.3;
-    this.text(title, { font: EFont.BOLD, fontSize: 20 }, { align: 'center' });
-    this.lineBreak(1);
+    this.text(title, { font: this.style.font.main.bold, fontSize: 20 }, { align: 'center' });
     
     if (subtitle) {
-      this.text(subtitle, { font: EFont.NORM, fontSize: 14 }, { align: 'center' });
       this.lineBreak(0.5);
+      this.text(subtitle, { fontSize: 14 }, { align: 'center' });
     }
     
     if (date) {
-      this.text(date, { font: EFont.NORM, fontSize: 12, fillColor: this.style.color.secondary }, { align: 'center' });
+      this.lineBreak(3);
+      this.text(date, { fontSize: 12, fillColor: this.style.color.secondary }, { align: 'center' });
     }
   }
 
@@ -155,7 +156,7 @@ export class PdfWriter {
     return this;
   }
 
-  text(str: string, style?: TextStyle, options?: TextOptions): PdfWriter {
+  text(str: string, style?: ITextStyle, options?: ITextOptions): PdfWriter {
     if (style && Object.keys(style).length > 0) {
       this.withStyle(style, () => this.textImpl(str, options));
     } else {
@@ -164,7 +165,7 @@ export class PdfWriter {
     return this;
   }
 
-  private textImpl(str: string, options?: TextOptions): PdfWriter {
+  private textImpl(str: string, options?: ITextOptions): PdfWriter {
     const style = this.currentStyle();
     const styledOpt = { lineGap: style.lineGap, ...options };
     const absolutePos = styledOpt.x !== undefined || styledOpt.y !== undefined;
@@ -178,7 +179,7 @@ export class PdfWriter {
   }
 
   header(level: number, str: string, anchor?: string) {
-    this.withStyle({ fillColor: this.style.color.headers, font: EFont.BOLD, fontSize: this.style.font.baseSize + 4 - level * 2 }, () => {
+    this.withStyle({ fillColor: this.style.color.headers, font: this.style.font.main.bold, fontSize: this.style.font.baseSize + 4 - level * 2 }, () => {
       this.text(str, {}, { destination: anchor });
       this.lineBreak(this.headerGap);
     });
@@ -196,7 +197,7 @@ export class PdfWriter {
       'delete': this.style.color.deleteMethod,
     };
     
-    this.withStyle({ font: EFont.BOLD, fontSize }, () => {
+    this.withStyle({ font: this.style.font.main.bold, fontSize }, () => {
       const width = this.doc.widthOfString(method);
       const height = this.doc.heightOfString(method);
       const color = colorByMethod[method.toLowerCase()] ?? this.style.color.otherMethods;
@@ -250,7 +251,7 @@ export class PdfWriter {
   }
 
   subHeader(str: string) {
-    this.withStyle({ fillColor: this.style.color.subHeaders, font: EFont.BOLD, fontSize: this.style.font.baseSize }, () => {
+    this.withStyle({ fillColor: this.style.color.subHeaders, font: this.style.font.main.bold, fontSize: this.style.font.baseSize }, () => {
       this.text(str, );
       this.lineBreak(this.headerGap);
     });
@@ -313,9 +314,9 @@ export class PdfWriter {
   }
 
   example(name: string, body: string) {
-    this.text(`Example "${name}":`, { font: EFont.BOLD });
+    this.text(`Example "${name}":`, { font: this.style.font.main.bold });
     this.lineBreak(this.paraGap);
-    this.text(body, { fillColor: this.style.color.secondary, fontSize: this.style.font.baseSize - 2, font: EFont.MONOSPACED });
+    this.text(body, { fillColor: this.style.color.secondary, fontSize: this.style.font.baseSize - 2, font: this.style.font.mono.bold });
   }
 
   enumValues(values: string[]) {
@@ -351,7 +352,7 @@ export class PdfWriter {
       doc.page.margins.bottom = 0;
 
       if (i > 0) {
-        this.withStyle({ font: EFont.NORM, fontSize: 9, fillColor: this.style.color.secondary }, () => {
+        this.withStyle({ fontSize: 9, fillColor: this.style.color.secondary }, () => {
           if (this.pageHeaderNodes[i]) {
             this.text(this.pageHeaderNodes[i], {}, { y: origTop / 2, align: 'right' });
           }
@@ -366,8 +367,8 @@ export class PdfWriter {
     doc.end();
   }
 
-  private setStyle(style: TextStyle) {
-    this.doc.font(this.fonts[style.font ?? 0]).fontSize(style.fontSize).fillColor(style.fillColor);
+  private setStyle(style: ITextStyle) {
+    this.doc.font(style.font!.face, style.font?.style || undefined).fontSize(style.fontSize).fillColor(style.fillColor);
   }
 
   private resetStyle() {
@@ -375,13 +376,13 @@ export class PdfWriter {
     this.setStyle(this.baseStyle);
   }
 
-  private withStyle(style: TextStyle, fn: (style: TextStyle) => void) {
+  private withStyle(style: ITextStyle, fn: (style: ITextStyle) => void) {
     const newStyle = this.pushStyle(style);
     fn(newStyle);
     this.popStyle();
   }
 
-  private pushStyle(style: TextStyle): TextStyle {
+  private pushStyle(style: ITextStyle): ITextStyle {
     const mergedStyle = { ...this.currentStyle(), ...style };
     mergedStyle.leftMargin = (this.currentStyle().leftMargin ?? 0) + (style.leftMargin ?? 0); // nested indent
     this.setStyle(mergedStyle);
@@ -390,7 +391,7 @@ export class PdfWriter {
     return mergedStyle;
   }
 
-  private popStyle(): TextStyle {
+  private popStyle(): ITextStyle {
     this.styleStack.pop();
     const prevStyle = this.currentStyle();
     this.setStyle(prevStyle);
@@ -398,7 +399,7 @@ export class PdfWriter {
     return prevStyle;
   }
 
-  private currentStyle(): TextStyle {
+  private currentStyle(): ITextStyle {
     return (this.styleStack.length > 0)
       ? this.styleStack[this.styleStack.length-1]
       : this.baseStyle;

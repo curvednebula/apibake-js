@@ -29,7 +29,7 @@
   "scripts": {
     "build": "tsc",
     "new-ver": "npm version patch && tsc && git commit -am 'publish to npm' && git push origin",
-    "dev": "ts-node ./src/index.ts test-data/v3.0 test-data/v3.1 test-data/private --title 'REST API Spec' --subtitle 'created by ApiBake'",
+    "dev": "ts-node ./src/index.ts test-data/v3.0 test-data/v3.1 test-data/private --title 'REST API Spec' --subtitle 'created with ApiBake'",
     "test": "ts-node ./src/test.ts",
     "prod": "node ./dist/index.js"
   },
