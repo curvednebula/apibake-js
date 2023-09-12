@@ -53,7 +53,23 @@ Modify apibake-config.json and tell apibake to use it:
 apibake openapi.json --config apibake-config.json
 ```
 
-Colors specified in #RRGGBB format.
+Colors specified in #RRGGBB format:
+
+```
+  "color": {
+    "main": "#333333",
+    "secondary": "#6B7B8E",
+    "highlight": "#8A3324",
+    "headers": "#2A4D69",
+    "subHeaders": "#4B86B4",
+    "getMethod": "#4A90E2",
+    "putMethod": "#6B8E23",
+    "postMethod": "#D87F0A",
+    "patchMethod": "#C2A000",
+    "deleteMethod": "#D0021B",
+    "otherMethods": "#2A4D69"
+  },
+```
 
 PDF default fonts can be specified by their names:
 
@@ -104,7 +120,7 @@ Example:
   }
 ```
 
-Note: if font file is a collection of fonts (.ttc) font style must be specified:
+Note: if font file is a collection (.ttc) font style must be also specified. Example:
 
 ```
  "font": {
@@ -121,8 +137,6 @@ Note: if font file is a collection of fonts (.ttc) font style must be specified:
     ...
  }
 ```
-
-
 
 # MIT License
 
