@@ -56,6 +56,9 @@ class PdfWriter {
         this.styleStack = [];
         this.headerGap = 0.7;
         this.paraGap = 0.5;
+        if (style) {
+            this.style = style; // external style
+        }
         this.baseStyle = {
             font: this.style.font.main.norm,
             fontSize: this.style.font.baseSize,
@@ -63,9 +66,6 @@ class PdfWriter {
             leftMargin: this.style.format.horizontalMargin,
             lineGap: 0,
         };
-        if (style) {
-            this.style = style; // external style
-        }
         this.doc = new PDFDocument({
             bufferPages: true,
             autoFirstPage: false,

@@ -37,12 +37,91 @@ apibake api1.json api2.yaml --title 'REST API Spec'
 apibake dir/with/openapi-specs --title 'REST API Spec'
 ```
 
-Custom config (colors, margins, font size):
+
+# Custom config: fonts, colors, page margins.
+
+To modify default apibake config - first export it into a file:
 
 ```
 apibake --export-config
-apibake api1.json --title 'REST API Spec' --config apibake-config.json
 ```
+
+Modify apibake-config.json and tell apibake to use it:
+
+```
+apibake openapi.json --config apibake-config.json
+```
+
+Colors specified in #RRGGBB format.
+
+PDF default fonts can be specified by their names:
+
+ - Courier
+ - Courier-Bold
+ - Courier-Oblique
+ - Courier-BoldOblique
+ - Helvetica
+ - Helvetica-Bold
+ - Helvetica-Oblique
+ - Helvetica-BoldOblique
+ - Symbol
+ - Times-Roman
+ - Times-Bold
+ - Times-Italic
+ - Times-BoldItalic
+ - ZapfDingbats
+
+Alternatively, external font files can be specified. Supported font formats: TrueType (.ttf), OpenType (.otf), WOFF, WOFF2, TrueType Collection (.ttc), and Datafork TrueType (.dfont) fonts.
+
+Example:
+
+```
+  "font": {
+    "baseSize": 10,
+    "main": {
+      "norm": {
+        "face": "fonts/Roboto-Regular.ttf"
+      },
+      "bold": {
+        "face": "fonts/Roboto-Bold.ttf"
+      },
+      "italic": {
+        "face": "fonts/Roboto-Italic.ttf"
+      }
+    },
+    "mono": {
+      "norm": {
+        "face": "Courier"
+      },
+      "bold": {
+        "face": "Courier-Bold"
+      },
+      "italic": {
+        "face": "Courier-Oblique"
+      }
+    }
+  }
+```
+
+Note: if font file is a collection of fonts (.ttc) font style must be specified:
+
+```
+ "font": {
+    "main": {
+      "norm": {
+        "face": "fonts/Roboto.ttc",
+        "style": "Roboto-Regular"
+      },
+      "bold": {
+        "face": "fonts/Roboto.ttc",
+        "style": "Roboto-Bold"
+      },
+    },
+    ...
+ }
+```
+
+
 
 # MIT License
 

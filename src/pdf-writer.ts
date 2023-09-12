@@ -80,18 +80,20 @@ export class PdfWriter {
   private headerGap = 0.7;
   private paraGap = 0.5;
 
-  private baseStyle: ITextStyle = {
-    font: this.style.font.main.norm,
-    fontSize: this.style.font.baseSize,
-    fillColor: this.style.color.main,
-    leftMargin: this.style.format.horizontalMargin,
-    lineGap: 0,
-  };
+  private baseStyle: ITextStyle;
 
   constructor(outputFilePath?: string, style?: any) {
     if (style) {
       this.style = style; // external style
     }
+
+    this.baseStyle = {
+      font: this.style.font.main.norm,
+      fontSize: this.style.font.baseSize,
+      fillColor: this.style.color.main,
+      leftMargin: this.style.format.horizontalMargin,
+      lineGap: 0,
+    };
 
     this.doc = new PDFDocument({ 
       bufferPages: true, 
