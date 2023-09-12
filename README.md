@@ -2,7 +2,9 @@
 
 Convert OpenAPI spec to PDF. Supports OpenAPI 3.0.0+ json and yaml.
 
-**Quick start:**
+## Quick Start
+
+Node.js 16+ required.
 
 ```
 npm install -g apibake
@@ -22,7 +24,7 @@ apibake <openapi.json|.yaml|folder-name> [<file-or-folder2> <file-or-folder3> ..
  -h: Show this help.
 ```
 
-**Examples:**
+## Examples
 
 Specify title and subtitle for your PDF:
 
@@ -37,7 +39,7 @@ apibake api1.json api2.yaml --title 'REST API Spec'
 apibake dir/with/openapi-specs --title 'REST API Spec'
 ```
 
-# Custom config: fonts, colors, page margins.
+## Custom config: fonts, colors, page margins.
 
 To modify default apibake config - first export it into a file:
 
