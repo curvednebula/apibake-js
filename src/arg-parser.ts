@@ -1,4 +1,4 @@
-import { errorLog, log } from "./logger";
+import { errorLog, log } from "./utils/logger";
 
 export interface Arg {
   key: string;

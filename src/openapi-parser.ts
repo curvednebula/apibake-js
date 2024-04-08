@@ -1,6 +1,6 @@
-import { log } from './logger';
-import { PdfWriter } from './pdf-writer';
-import { sanitizeDescription } from './string-utils';
+import { log } from './utils/logger';
+import { PdfWriter } from './pdf/pdf-writer';
+import { sanitizeDescription } from './utils/string-utils';
 
 export type ApiSpec = Record<string, any>;
 

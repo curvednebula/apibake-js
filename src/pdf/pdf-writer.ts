@@ -1,6 +1,6 @@
 import fs from 'fs';
-import { DataField } from './openapi-parser';
-import { deepOverride } from './obj-utils';
+import { DataField } from '../openapi-parser';
+import { deepOverride } from '../utils/obj-utils';
 const PDFDocument = require('pdfkit');
 
 class Font {

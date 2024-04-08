@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 import fs from 'fs';
 import { OpenApiParser } from './openapi-parser';
-import { PdfWriter } from './pdf-writer';
-import { errorLog, log } from './logger';
+import { PdfWriter } from './pdf/pdf-writer';
+import { errorLog, log } from './utils/logger';
 import * as path from 'path';
 import moment from 'moment';
 import YAML from 'yaml';
-import { capitalizeFirst } from './string-utils';
+import { capitalizeFirst } from './utils/string-utils';
 import { Arg, ArgsParser } from './arg-parser';
 
 const packageJson = require('../package.json');
