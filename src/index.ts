@@ -7,22 +7,23 @@ import * as path from 'path';
 import moment from 'moment';
 import YAML from 'yaml';
 import { capitalizeFirst } from './utils/string-utils';
-import { Arg, ArgsParser } from './arg-parser';
+import { Arg, ArgsParser } from './utils/arg-parser';
 
 const packageJson = require('../package.json');
 const configFile = 'apibake-config.json';
 
-const args = {
+const inputArgs = {
   output: <Arg>{ key: 'out', value: 'output.pdf', help: 'Output PDF file name.' },
   title: <Arg>{ key: 'title', value: 'API Spec', help: 'Document title.' },
   subtitle: <Arg>{ key: 'subtitle', value: '', help: 'Document sub title.' },
   separateSchemas: <Arg>{ key: 'separate-schemas', value: false, help: 'When multiple API files parsed, create separate schemas section for each.' },
+  footer: <Arg>{ key: 'footer', value: '"page-number"', help: 'Defines content of common page footer. To turn off all options: --footer ""' },
   config: <Arg>{ key: 'config', value: '', help: `Path to ${configFile}. See --export-config.` },
   exportConfig: <Arg>{ key: 'export-config', value: false, help: 'Save default config into json file for editing.' },
   help: <Arg>{ key: 'h', value: false, help: 'Show this help.' },
 }
 
-const argsParser = new ArgsParser(args);
+const argsParser = new ArgsParser(inputArgs);
 
 const printUsageHelp = () => {
   log(`ApiBake ${packageJson.version} - Convert OpenAPI spec to PDF.`);
@@ -32,8 +33,8 @@ const printUsageHelp = () => {
 }
 
 const main = () => {
-  // TODO: parse will set values in args object itself - it is convinient that autocomplete works for args, but behaviour is not obvious
-  if (!argsParser.parse()) {
+  const args = argsParser.parse();
+  if (!args) {
     return;
   }
 

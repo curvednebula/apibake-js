@@ -1,4 +1,4 @@
-import { errorLog, log } from "./utils/logger";
+import { errorLog, log } from "./logger";
 
 export interface Arg {
   key: string;
@@ -6,12 +6,12 @@ export interface Arg {
   help: string;
 }
 
-export class ArgsParser {
+export class ArgsParser<T extends Record<string, Arg>> {
   readonly rest: string[] = [];
 
-  constructor(public args: Record<string, Arg>) {}
+  constructor(public args: T) {}
   
-  parse(): boolean {
+  parse(): T | undefined {
     const rawArgs = process.argv.slice(2);
   
     let allGood = true;
@@ -38,7 +38,7 @@ export class ArgsParser {
       }
     }
   
-    return allGood;
+    return allGood ? this.args : undefined;
   }
 
   printArgUsage() {
