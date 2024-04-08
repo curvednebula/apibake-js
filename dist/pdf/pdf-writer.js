@@ -5,7 +5,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PdfWriter = void 0;
 const fs_1 = __importDefault(require("fs"));
-const obj_utils_1 = require("./obj-utils");
+const obj_utils_1 = require("../utils/obj-utils");
+const input_args_1 = require("../input-args");
 const PDFDocument = require('pdfkit');
 class Font {
     constructor(face, style) {
@@ -15,7 +16,8 @@ class Font {
 }
 ;
 class PdfWriter {
-    constructor(outputFilePath, style) {
+    constructor(outputFile, options) {
+        this.options = options;
         // configurable PDF style
         this.style = {
             color: {
@@ -57,8 +59,8 @@ class PdfWriter {
         this.styleStack = [];
         this.headerGap = 0.7;
         this.paraGap = 0.5;
-        if (style) {
-            this.style = (0, obj_utils_1.deepOverride)(this.style, style);
+        if (options === null || options === void 0 ? void 0 : options.style) {
+            this.style = (0, obj_utils_1.deepOverride)(this.style, options === null || options === void 0 ? void 0 : options.style);
         }
         this.baseStyle = {
             font: this.style.font.main.norm,
@@ -77,8 +79,8 @@ class PdfWriter {
                 bottom: this.style.format.verticalMargin
             }
         });
-        if (outputFilePath) {
-            const writeStream = fs_1.default.createWriteStream(outputFilePath);
+        if (outputFile) {
+            const writeStream = fs_1.default.createWriteStream(outputFile);
             this.doc.pipe(writeStream);
         }
         // NOTE: it is impossible to edit pages in pageAdded as it is sometimes invoked after one text already placed on the page
@@ -286,7 +288,10 @@ class PdfWriter {
         });
     }
     finish() {
+        var _a, _b;
         const doc = this.doc;
+        const footerOptions = (_b = (_a = this.options) === null || _a === void 0 ? void 0 : _a.footerContent) === null || _b === void 0 ? void 0 : _b.trim().split(/\s+/);
+        const showPageNumbers = footerOptions === null || footerOptions === void 0 ? void 0 : footerOptions.includes(input_args_1.EFooterOptions.pageNumber);
         // Add headers and footers to all pages
         let pages = doc.bufferedPageRange();
         for (let i = 0; i < pages.count; i++) {
@@ -300,7 +305,9 @@ class PdfWriter {
                     if (this.pageHeaderNodes[i]) {
                         this.text(this.pageHeaderNodes[i], {}, { y: origTop / 2, align: 'right' });
                     }
-                    this.text(`Page ${i} / ${pages.count - 1}`, {}, { y: this.doc.page.height - origBottom / 2, align: 'right' });
+                    if (showPageNumbers) {
+                        this.text(`Page ${i} / ${pages.count - 1}`, {}, { y: this.doc.page.height - origBottom / 2, align: 'right' });
+                    }
                 });
             }
             doc.page.margins.top = origTop;

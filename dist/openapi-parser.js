@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.OpenApiParser = exports.DataField = exports.SchemaRef = void 0;
-const logger_1 = require("./logger");
-const string_utils_1 = require("./string-utils");
+const logger_1 = require("./utils/logger");
+const string_utils_1 = require("./utils/string-utils");
 class ApiSpecLeaf {
     constructor(name, spec) {
         this.name = name;

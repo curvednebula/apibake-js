@@ -19,6 +19,7 @@ apibake <openapi.json|.yaml|folder-name> [<file-or-folder2> <file-or-folder3> ..
  --title <string>: Document title.
  --subtitle <string>: Document sub title.
  --separate-schemas: When multiple API files parsed, create separate schemas section for each.
+ --footer <string>: Defines content of common page footer. Options: "page-number". To turn off: "".
  --config <string>: Path to apibake-config.json. See --export-config.
  --export-config: Save default config into json file for editing.
  -h: Show this help.

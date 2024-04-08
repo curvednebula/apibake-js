@@ -1,6 +1,7 @@
 import fs from 'fs';
 import { DataField } from '../openapi-parser';
 import { deepOverride } from '../utils/obj-utils';
+import { EFooterOptions } from '../input-args';
 const PDFDocument = require('pdfkit');
 
 class Font {
@@ -83,9 +84,15 @@ export class PdfWriter {
 
   private baseStyle: ITextStyle;
 
-  constructor(outputFilePath?: string, style?: any) {
-    if (style) {
-      this.style = deepOverride(this.style, style);
+  constructor(
+    outputFile?: string,
+    private options?: {
+      style?: any,
+      footerContent?: string
+    }
+  ) {
+    if (options?.style) {
+      this.style = deepOverride(this.style, options?.style);
     }
 
     this.baseStyle = {
@@ -107,8 +114,8 @@ export class PdfWriter {
       }
     });
 
-    if (outputFilePath) {
-      const writeStream = fs.createWriteStream(outputFilePath);
+    if (outputFile) {
+      const writeStream = fs.createWriteStream(outputFile);
       this.doc.pipe(writeStream);
     }
 
@@ -343,6 +350,8 @@ export class PdfWriter {
 
   finish() {
     const doc = this.doc;
+    const footerOptions = this.options?.footerContent?.trim().split(/\s+/);
+    const showPageNumbers = footerOptions?.includes(EFooterOptions.pageNumber);
 
     // Add headers and footers to all pages
     let pages = doc.bufferedPageRange();
@@ -359,7 +368,9 @@ export class PdfWriter {
           if (this.pageHeaderNodes[i]) {
             this.text(this.pageHeaderNodes[i], {}, { y: origTop / 2, align: 'right' });
           }
-          this.text(`Page ${i} / ${pages.count - 1}`, {}, { y: this.doc.page.height - origBottom / 2, align: 'right' });
+          if (showPageNumbers) {
+            this.text(`Page ${i} / ${pages.count - 1}`, {}, { y: this.doc.page.height - origBottom / 2, align: 'right' });
+          }
         });
       }
       

@@ -27,10 +27,10 @@
     "apibake": "./dist/index.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "rm -rf ./dist && tsc",
     "new-ver": "npm version patch && tsc && git commit -am 'publish to npm' && git push origin",
-    "dev": "ts-node ./src/index.ts test-data/v3.0 test-data/v3.1 test-data/private --title 'REST API Spec' --subtitle 'created with ApiBake'",
-    "test": "ts-node ./src/test.ts",
+    "dev": "ts-node ./src/index.ts test-data/v3.0 test-data/v3.1 test-data/private --title 'REST API Spec' --subtitle 'Created with ApiBake'",
+    "tests": "ts-node ./src/test/pdf-kit-tests.ts",
     "prod": "node ./dist/index.js"
   },
   "devDependencies": {

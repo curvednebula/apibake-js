@@ -40,7 +40,7 @@ class ArgsParser {
                 this.rest.push(arg);
             }
         }
-        return allGood;
+        return allGood ? this.args : undefined;
     }
     printArgUsage() {
         Object.values(this.args).forEach((a) => {

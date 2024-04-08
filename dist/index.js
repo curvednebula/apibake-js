@@ -29,25 +29,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const fs_1 = __importDefault(require("fs"));
 const openapi_parser_1 = require("./openapi-parser");
-const pdf_writer_1 = require("./pdf-writer");
-const logger_1 = require("./logger");
+const pdf_writer_1 = require("./pdf/pdf-writer");
+const logger_1 = require("./utils/logger");
 const path = __importStar(require("path"));
 const moment_1 = __importDefault(require("moment"));
 const yaml_1 = __importDefault(require("yaml"));
-const string_utils_1 = require("./string-utils");
-const arg_parser_1 = require("./arg-parser");
+const string_utils_1 = require("./utils/string-utils");
+const arg_parser_1 = require("./utils/arg-parser");
+const input_args_1 = require("./input-args");
 const packageJson = require('../package.json');
-const configFile = 'apibake-config.json';
-const args = {
-    output: { key: 'out', value: 'output.pdf', help: 'Output PDF file name.' },
-    title: { key: 'title', value: 'API Spec', help: 'Document title.' },
-    subtitle: { key: 'subtitle', value: '', help: 'Document sub title.' },
-    separateSchemas: { key: 'separate-schemas', value: false, help: 'When multiple API files parsed, create separate schemas section for each.' },
-    config: { key: 'config', value: '', help: `Path to ${configFile}. See --export-config.` },
-    exportConfig: { key: 'export-config', value: false, help: 'Save default config into json file for editing.' },
-    help: { key: 'h', value: false, help: 'Show this help.' },
-};
-const argsParser = new arg_parser_1.ArgsParser(args);
+const argsParser = new arg_parser_1.ArgsParser(input_args_1.inputArgs);
 const printUsageHelp = () => {
     (0, logger_1.log)(`ApiBake ${packageJson.version} - Convert OpenAPI spec to PDF.`);
     (0, logger_1.log)('Usage: apibake <openapi.json|.yaml|folder-name> [<file-or-folder2> <file-or-folder3> ...] [<options>]');
@@ -55,8 +46,8 @@ const printUsageHelp = () => {
     argsParser.printArgUsage();
 };
 const main = () => {
-    // TODO: parse will set values in args object itself - it is convinient that autocomplete works for args, but behaviour is not obvious
-    if (!argsParser.parse()) {
+    const args = argsParser.parse();
+    if (!args) {
         return;
     }
     if (args.help.value) {
@@ -75,8 +66,8 @@ const main = () => {
     }
     if (args.exportConfig.value) {
         const defaultStyleDoc = new pdf_writer_1.PdfWriter();
-        fs_1.default.writeFileSync(configFile, JSON.stringify(defaultStyleDoc.style, null, 2));
-        (0, logger_1.log)(`Default config exported into ${configFile}`);
+        fs_1.default.writeFileSync(input_args_1.configFile, JSON.stringify(defaultStyleDoc.style, null, 2));
+        (0, logger_1.log)(`Default config exported into ${input_args_1.configFile}`);
         return;
     }
     if (argsParser.rest.length === 0) {
@@ -84,7 +75,10 @@ const main = () => {
         return;
     }
     const outputFile = args.output.value;
-    const doc = new pdf_writer_1.PdfWriter(outputFile, style);
+    const doc = new pdf_writer_1.PdfWriter(outputFile, {
+        style,
+        footerContent: args.footer.value
+    });
     doc.addTitlePage(args.title.value, args.subtitle.value, (0, moment_1.default)().format('YYYY-MM-DD'));
     const errorMessages = [];
     const allFiles = [];
