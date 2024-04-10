@@ -3,7 +3,7 @@ export const debugLog = (str: string) => {
 }
 
 export const errorLog = (e: any, str?: string) => {
-  console.error(e);
+  console.error(`ERROR: ${e}`);
   if (str) {
     console.error(str);
   }

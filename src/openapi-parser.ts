@@ -1,4 +1,4 @@
-import { log } from './utils/logger';
+import { errorLog, log } from './utils/logger';
 import { PdfWriter } from './pdf/pdf-writer';
 import { sanitizeDescription } from './utils/string-utils';
 
@@ -283,6 +283,7 @@ export class OpenApiParser {
     } else if (schemaRef['\$ref']) {
       const schemaName = this.schemaNameByRef(schemaRef['\$ref']);
       const anchor = this.schemaDefinitionExists(schemaName) ? this.schemaAnchor(schemaName) : undefined;
+      errorLog(`No definition for ref: ${schemaRef['\$ref']}`);
       return new SchemaRef(schemaName, schemaName, anchor);
     }
     return SchemaRef.undefined();
