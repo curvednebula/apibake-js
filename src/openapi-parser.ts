@@ -4,11 +4,9 @@ import { sanitizeDescription } from './utils/string-utils';
 
 export type ApiSpec = Record<string, any>;
 
-class JsonNode {
-  constructor(
-    public key: string,
-    public value: any
-  ) {}
+type JsonNode = {
+  key: string,
+  value: any
 }
 
 export class SchemaRef {
@@ -58,7 +56,7 @@ const allAnyOneNames: Record<string, string> = {
 function getFirstOf(spec: ApiSpec, children: string[]): JsonNode | undefined {
   for (const child of children) {
     if (spec[child]) {
-      return new JsonNode(child, spec[child]);
+      return { key: child, value: spec[child] };
     }
   }
   return undefined;
