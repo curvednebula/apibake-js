@@ -306,14 +306,15 @@ export class PdfWriter {
     });
   }
 
-  schemaType(typeName: string, contentType?: string) {
-    if (contentType) {
-      this.text('Content: ', {}, { continued: true });
-      this.text(contentType, { fillColor: this.style.color.highlight }, { continued: true });
-      this.text(' | ', {}, { continued: true });
-    }
+  contentType(contentType: string) {
+    this.text('Content: ', {}, { continued: true });
+    this.text(contentType, { fillColor: this.style.color.highlight }, { continued: true });
+    this.text(' | ', {}, { continued: true });
+  }
+
+  schemaType(typeName: string) {
     this.text('Type: ', {}, { continued: true });
-    this.text(typeName, { fillColor: this.style.color.highlight });
+    this.text(typeName ?? '-', { fillColor: this.style.color.highlight });
     this.lineBreak(this.paraGap);
   }
 

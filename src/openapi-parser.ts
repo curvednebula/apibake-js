@@ -47,6 +47,17 @@ export class DataField {
   }
 }
 
+const allAnyOne = ['allOf', 'anyOf', 'oneOf'];
+
+function getFirstOf(spec: ApiSpec, children: string[]): ApiSpecLeaf | undefined {
+  for (const child of children) {
+    if (spec[child]) {
+      return new ApiSpecLeaf(child, spec[child]);
+    }
+  }
+  return undefined;
+}
+
 export class OpenApiParser {
   private firstHeaderLevel = 0;
 
@@ -173,7 +184,12 @@ export class OpenApiParser {
         if (schemaRef) {
           const schema = this.parseSchemaRef(schemaRef);
           const schemaSpec = this.spec['components']?.['schemas']?.[schema.schemaName] as ApiSpec;
-          this.parseSchema(schemaSpec, schema.text, contentType);
+          this.doc.contentType(contentType);
+          if (schemaSpec) {
+            this.parseSchema(schemaSpec, { showType: true });
+          } else {
+            this.doc.schemaType(schema.text);
+          }
           emptyBody = false;
         }
 
@@ -211,6 +227,43 @@ export class OpenApiParser {
   }
   
   private parseSchemas(schemas: ApiSpec) {
+    // Example:
+    // {
+    //   "Pet": {
+    //     "allOf": [
+    //       {
+    //         "$ref": "#/components/schemas/NewPet"
+    //       },
+    //       {
+    //         "type": "object",
+    //         "required": [
+    //           "id"
+    //         ],
+    //         "properties": {
+    //           "id": {
+    //             "type": "integer",
+    //             "format": "int64"
+    //           }
+    //         }
+    //       }
+    //     ]
+    //   },
+    //   "NewPet": {
+    //     "type": "object",
+    //     "required": [
+    //       "name"
+    //     ],
+    //     "properties": {
+    //       "name": {
+    //         "type": "string"
+    //       },
+    //       "tag": {
+    //         "type": "string"
+    //       }
+    //     }
+    //   },
+    // }
+
     log('Schemas:');
 
     const headerLevel = this.mergeSchemasInOneSection ? this.firstHeaderLevel : this.firstHeaderLevel + 1;
@@ -226,14 +279,23 @@ export class OpenApiParser {
     });
   }
 
-  private parseSchema(schemaSpec?: ApiSpec, name?: string, contentType?: string) {
-    const typeName = name ?? schemaSpec?.['type'] as string;
-    if (typeName !== 'object') {
-      this.doc.schemaType(typeName, contentType);
-    }
-
+  private parseSchema(schemaSpec: ApiSpec, options?: { showType?: boolean }) {
     if (!schemaSpec) {
       return;
+    }
+
+    const leaf = getFirstOf(schemaSpec, allAnyOne);
+    if (leaf?.spec && Array.isArray(leaf.spec)) {
+      this.doc.para(leaf.name);
+      leaf.spec.forEach(it => {
+        this.parseSchema(it, { showType: true });
+      });
+      return;
+    }
+
+    const typeName = schemaSpec?.['type'] as string;
+    if (typeName !== 'object' || options?.showType) {
+      this.doc.schemaType(typeName);
     }
 
     const properties = schemaSpec['properties'] as ApiSpec;
@@ -269,7 +331,7 @@ export class OpenApiParser {
   }
 
   private schemaAnchor(schemaName: string): string {
-    return this.mergeSchemasInOneSection ?  `schemas: ${schemaName}` : `${this.sectionName}: ${schemaName}`;
+    return this.mergeSchemasInOneSection ?  `schemas:${schemaName}` : `${this.sectionName}:${schemaName}`;
   }
 
   private parseSchemaRef(schemaRef: ApiSpec): SchemaRef {
@@ -283,7 +345,9 @@ export class OpenApiParser {
     } else if (schemaRef['\$ref']) {
       const schemaName = this.schemaNameByRef(schemaRef['\$ref']);
       const anchor = this.schemaDefinitionExists(schemaName) ? this.schemaAnchor(schemaName) : undefined;
-      errorLog(`No definition for ref: ${schemaRef['\$ref']}`);
+      if (!anchor) {
+        log(`! No definition for ref: ${schemaRef['\$ref']}`);
+      }
       return new SchemaRef(schemaName, schemaName, anchor);
     }
     return SchemaRef.undefined();
@@ -298,7 +362,7 @@ export class OpenApiParser {
       }
 
       if (typeRef === undefined || typeRef.isUndefined()) {
-        const leaf = this.getFirstOf(paramSpec, ['anyOf', 'allOf', 'oneOf']);
+        const leaf = getFirstOf(paramSpec, allAnyOne);
         // TODO: parse entire array of possible schemas
         if (leaf?.spec[0]) {
           typeRef = this.parseSchemaRef(leaf?.spec[0]!);
@@ -308,14 +372,5 @@ export class OpenApiParser {
         new DataField(paramSpec['name'], typeRef, paramSpec['description'], paramSpec['required'])
       ]);
     }
-  }
-
-  private getFirstOf(spec: ApiSpec, children: string[]): ApiSpecLeaf | undefined {
-    for (const child of children) {
-      if (spec[child]) {
-        return new ApiSpecLeaf(child, spec[child]);
-      }
-    }
-    return undefined;
   }
 }
