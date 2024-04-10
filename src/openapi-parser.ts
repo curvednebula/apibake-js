@@ -4,10 +4,10 @@ import { sanitizeDescription } from './utils/string-utils';
 
 export type ApiSpec = Record<string, any>;
 
-class ApiSpecLeaf {
+class JsonNode {
   constructor(
-    public name: string,
-    public spec: any
+    public key: string,
+    public value: any
   ) {}
 }
 
@@ -49,10 +49,16 @@ export class DataField {
 
 const allAnyOne = ['allOf', 'anyOf', 'oneOf'];
 
-function getFirstOf(spec: ApiSpec, children: string[]): ApiSpecLeaf | undefined {
+const allAnyOneNames: Record<string, string> = {
+  'allOf': 'all of',
+  'anyOf': 'any of',
+  'oneOf': 'one of'
+};
+
+function getFirstOf(spec: ApiSpec, children: string[]): JsonNode | undefined {
   for (const child of children) {
     if (spec[child]) {
-      return new ApiSpecLeaf(child, spec[child]);
+      return new JsonNode(child, spec[child]);
     }
   }
   return undefined;
@@ -285,9 +291,9 @@ export class OpenApiParser {
     }
 
     const leaf = getFirstOf(schemaSpec, allAnyOne);
-    if (leaf?.spec && Array.isArray(leaf.spec)) {
-      this.doc.para(leaf.name);
-      leaf.spec.forEach(it => {
+    if (leaf?.value && Array.isArray(leaf.value)) {
+      this.doc.para(allAnyOneNames[leaf.key]);
+      leaf.value.forEach(it => {
         this.parseSchema(it, { showType: true });
       });
       return;
@@ -364,8 +370,8 @@ export class OpenApiParser {
       if (typeRef === undefined || typeRef.isUndefined()) {
         const leaf = getFirstOf(paramSpec, allAnyOne);
         // TODO: parse entire array of possible schemas
-        if (leaf?.spec[0]) {
-          typeRef = this.parseSchemaRef(leaf?.spec[0]!);
+        if (leaf?.value[0]) {
+          typeRef = this.parseSchemaRef(leaf?.value[0]!);
         }
       }
       this.doc.dataFields([
