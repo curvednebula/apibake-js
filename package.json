@@ -30,9 +30,10 @@
     "build": "rm -rf ./dist && tsc",
     "new-ver": "npm version patch && npm run build && git commit -am 'new version' && git push origin",
     "publish-to-npm": "npm login && npm publish",
-    "dev": "ts-node ./src/index.ts test-data/v3.0 test-data/v3.1 test-data/private --title 'REST API Spec' --subtitle 'Created with ApiBake' --separate-schemas",
-    "test": "npx apibake@latest test-data/v3.0 test-data/v3.1 test-data/private --title 'REST API Spec' --subtitle 'Created with ApiBake'",
-    "pdfkit-test": "ts-node ./src/test/pdf-kit-tests.ts",
+    "dev": "ts-node ./src/index.ts test-data/v3.0 test-data/v3.1 --title 'REST API Spec' --subtitle 'Created with ApiBake' --separate-schemas",
+    "dev-private": "ts-node ./src/index.ts test-data/private --title 'REST API Spec' --subtitle 'Created with ApiBake' --separate-schemas",
+    "test": "npx apibake@latest test-data/v3.0 test-data/v3.1 --title 'REST API Spec' --subtitle 'Created with ApiBake'",
+    "test-pdfkit": "ts-node ./src/test/pdf-kit-tests.ts",
     "prod": "node ./dist/index.js"
   },
   "devDependencies": {
