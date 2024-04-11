@@ -45,18 +45,10 @@ export class DataField {
   }
 }
 
-const allAnyOne = ['allOf', 'anyOf', 'oneOf'];
-
-const allAnyOneNames: Record<string, string> = {
-  'allOf': 'All of',
-  'anyOf': 'Any of',
-  'oneOf': 'One of'
-};
-
-const allAnyOneConnectWith: Record<string, string> = {
-  'allOf': 'and',
-  'anyOf': 'or',
-  'oneOf': 'or'
+const allAnyOne: Record<string, { name: string; connectWord: string }> = {
+  'allOf': { name: 'All of', connectWord: 'and' },
+  'anyOf': { name: 'Any of', connectWord: 'or' },
+  'oneOf': { name: 'One of', connectWord: 'or' },
 };
 
 function getFirstOf(spec: ApiSpec, children: string[]): JsonNode | undefined {
@@ -294,15 +286,18 @@ export class OpenApiParser {
       return;
     }
 
-    const leaf = getFirstOf(schemaSpec, allAnyOne);
+    const leaf = getFirstOf(schemaSpec, Object.keys(allAnyOne));
+
     if (leaf?.value && Array.isArray(leaf.value)) {
-      this.doc.description(`${allAnyOneNames[leaf.key]}:`);
+      const aggregate = allAnyOne[leaf.key];
+      this.doc.description(`${aggregate.name}:`);
+      
       leaf.value.forEach((it, index, arr) => {
         this.doc.indentStart();
         this.parseSchema(it);
         this.doc.indentEnd();
         if (index < arr.length - 1) {
-          this.doc.description(allAnyOneConnectWith[leaf.key]);
+          this.doc.description(aggregate.connectWord);
         }
       });
       
@@ -378,7 +373,7 @@ export class OpenApiParser {
       }
 
       if (typeRef === undefined || typeRef.isUndefined()) {
-        const leaf = getFirstOf(paramSpec, allAnyOne);
+        const leaf = getFirstOf(paramSpec, Object.keys(allAnyOne));
         // TODO: parse entire array of possible schemas
         if (leaf?.value[0]) {
           typeRef = this.parseSchemaRef(leaf?.value[0]!);
