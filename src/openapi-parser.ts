@@ -48,9 +48,15 @@ export class DataField {
 const allAnyOne = ['allOf', 'anyOf', 'oneOf'];
 
 const allAnyOneNames: Record<string, string> = {
-  'allOf': 'all of',
-  'anyOf': 'any of',
-  'oneOf': 'one of'
+  'allOf': 'All of',
+  'anyOf': 'Any of',
+  'oneOf': 'One of'
+};
+
+const allAnyOneConnectWith: Record<string, string> = {
+  'allOf': 'and',
+  'anyOf': 'or',
+  'oneOf': 'or'
 };
 
 function getFirstOf(spec: ApiSpec, children: string[]): JsonNode | undefined {
@@ -190,7 +196,7 @@ export class OpenApiParser {
           const schemaSpec = this.spec['components']?.['schemas']?.[schema.schemaName] as ApiSpec;
           this.doc.contentType(contentType);
           if (schemaSpec) {
-            this.parseSchema(schemaSpec, { showType: true });
+            this.parseSchema(schemaSpec, { alwaysShowType: true });
           } else {
             this.doc.schemaType(schema.text);
           }
@@ -283,22 +289,28 @@ export class OpenApiParser {
     });
   }
 
-  private parseSchema(schemaSpec: ApiSpec, options?: { showType?: boolean }) {
+  private parseSchema(schemaSpec: ApiSpec, options?: { alwaysShowType?: boolean }) {
     if (!schemaSpec) {
       return;
     }
 
     const leaf = getFirstOf(schemaSpec, allAnyOne);
     if (leaf?.value && Array.isArray(leaf.value)) {
-      this.doc.para(allAnyOneNames[leaf.key]);
-      leaf.value.forEach(it => {
-        this.parseSchema(it, { showType: true });
+      this.doc.description(`${allAnyOneNames[leaf.key]}:`);
+      leaf.value.forEach((it, index, arr) => {
+        this.doc.indentStart();
+        this.parseSchema(it);
+        this.doc.indentEnd();
+        if (index < arr.length - 1) {
+          this.doc.description(allAnyOneConnectWith[leaf.key]);
+        }
       });
+      
       return;
     }
 
     const typeName = schemaSpec?.['type'] as string;
-    if (typeName !== 'object' || options?.showType) {
+    if (typeName !== 'object' || options?.alwaysShowType) {
       this.doc.schemaType(typeName);
     }
 
