@@ -281,17 +281,17 @@ export class OpenApiParser {
 
     // If schema is aggregate: allOf, anyOf, oneOf
 
-    const leaf = getFirstOf(schemaSpec, Object.keys(allAnyOne));
+    const found = getFirstOf(schemaSpec, Object.keys(allAnyOne));
 
-    if (leaf?.value && Array.isArray(leaf.value)) {
-      const aggregate = allAnyOne[leaf.key];
+    if (found?.value && Array.isArray(found.value)) {
+      const aggregate = allAnyOne[found.key];
       if (options?.lineContinues) {
-        this.doc.nextLine();
         this.doc.paraBreak();
       }
       this.doc.description(`${aggregate.name}:`);
       
-      leaf.value.forEach((it, index, arr) => {
+      // TODO: for allOf combine schemas into a single object
+      found.value.forEach((it, index, arr) => {
         this.doc.indentStart();
         this.parseSchema(it);
         this.doc.indentEnd();
@@ -308,19 +308,19 @@ export class OpenApiParser {
     if (ref.schemaName && ref.anchor) {
       const foundRef = this.spec['components']?.['schemas']?.[ref.schemaName] as ApiSpec;
       if (foundRef) {
+        this.doc.textRef(ref.text, ref.anchor);
         this.parseSchema(foundRef, options);
       } else {
         this.doc.textRef(ref.text, ref.anchor);
       }
       return;
+    } else {
+      if (ref.text !== 'object') {
+        this.doc.text(ref.text);
+      }
     }
 
     // If schema defined explicetly
-
-    const typeName = schemaSpec?.['type'] as string;
-    if (typeName !== 'object' || options?.alwaysShowType) {
-      this.doc.schemaType(typeName);
-    }
 
     const properties = schemaSpec['properties'] as ApiSpec;
     if (properties) {
@@ -340,7 +340,7 @@ export class OpenApiParser {
       this.doc.enumValues(schemaSpec['enum'] as string[]);
     }
 
-    this.doc.lineBreak();
+    this.doc.paraBreak();
   }
 
   private schemaNameByRef(ref: string) {
