@@ -184,7 +184,7 @@ export class OpenApiParser {
       Object.entries(contentSpec).forEach(([contentType, contentSpec]) => {
         const schema = contentSpec['schema'] as ApiSpec;
         if (schema) {
-          this.doc.contentType(contentType);
+          this.doc.contentType(contentType, true);
           this.parseSchema(schema, { alwaysShowType: true, lineContinues: true });
           emptyBody = false;
         }
@@ -284,10 +284,11 @@ export class OpenApiParser {
     const found = getFirstOf(schemaSpec, Object.keys(allAnyOne));
 
     if (found?.value && Array.isArray(found.value)) {
-      const aggregate = allAnyOne[found.key];
       if (options?.lineContinues) {
+        this.doc.nextLine();
         this.doc.paraBreak();
       }
+      const aggregate = allAnyOne[found.key];
       this.doc.description(`${aggregate.name}:`);
       
       // TODO: for allOf combine schemas into a single object
@@ -304,18 +305,22 @@ export class OpenApiParser {
 
     // If schema is a reference
 
+    if (options?.lineContinues) {
+      this.doc.text(' | ', {}, { continued: true });
+    }
+
     const ref = this.parseSchemaRef(schemaSpec);
     if (ref.schemaName && ref.anchor) {
       const foundRef = this.spec['components']?.['schemas']?.[ref.schemaName] as ApiSpec;
       if (foundRef) {
         this.doc.textRef(ref.text, ref.anchor);
-        this.parseSchema(foundRef, options);
+        this.parseSchema(foundRef);
       } else {
         this.doc.textRef(ref.text, ref.anchor);
       }
       return;
     } else {
-      if (ref.text !== 'object') {
+      if (!ref.isUndefined() && ref.text !== 'object') {
         this.doc.text(ref.text);
       }
     }
