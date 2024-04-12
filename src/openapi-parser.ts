@@ -182,26 +182,19 @@ export class OpenApiParser {
 
     if (contentSpec) {
       Object.entries(contentSpec).forEach(([contentType, contentSpec]) => {
-        const schemaRef = contentSpec['schema'] as ApiSpec;
-        if (schemaRef) {
-          const schema = this.parseSchemaRef(schemaRef);
-          const schemaSpec = this.spec['components']?.['schemas']?.[schema.schemaName] as ApiSpec;
+        const schema = contentSpec['schema'] as ApiSpec;
+        if (schema) {
           this.doc.contentType(contentType);
-          if (schemaSpec) {
-            this.parseSchema(schemaSpec, { alwaysShowType: true });
-          } else {
-            this.doc.schemaType(schema.text);
-          }
+          this.parseSchema(schema, { alwaysShowType: true, lineContinues: true });
           emptyBody = false;
         }
-
         this.parseExamples(contentSpec['examples'] as ApiSpec);
       });
     }
-    if (emptyBody) {
-      // this.doc.para('Empty body.');
-    }
-    this.doc.lineBreak();
+    // if (emptyBody) {
+    //   this.doc.para('Empty body.');
+    // }
+    this.doc.paraBreak();
   }
 
   private parseExamples(spec: ApiSpec) {
@@ -281,15 +274,21 @@ export class OpenApiParser {
     });
   }
 
-  private parseSchema(schemaSpec: ApiSpec, options?: { alwaysShowType?: boolean }) {
+  private parseSchema(schemaSpec: ApiSpec, options?: { alwaysShowType?: boolean, lineContinues?: boolean }) {
     if (!schemaSpec) {
       return;
     }
+
+    // If schema is aggregate: allOf, anyOf, oneOf
 
     const leaf = getFirstOf(schemaSpec, Object.keys(allAnyOne));
 
     if (leaf?.value && Array.isArray(leaf.value)) {
       const aggregate = allAnyOne[leaf.key];
+      if (options?.lineContinues) {
+        this.doc.nextLine();
+        this.doc.paraBreak();
+      }
       this.doc.description(`${aggregate.name}:`);
       
       leaf.value.forEach((it, index, arr) => {
@@ -300,9 +299,23 @@ export class OpenApiParser {
           this.doc.description(aggregate.connectWord);
         }
       });
-      
       return;
     }
+
+    // If schema is a reference
+
+    const ref = this.parseSchemaRef(schemaSpec);
+    if (ref.schemaName && ref.anchor) {
+      const foundRef = this.spec['components']?.['schemas']?.[ref.schemaName] as ApiSpec;
+      if (foundRef) {
+        this.parseSchema(foundRef, options);
+      } else {
+        this.doc.textRef(ref.text, ref.anchor);
+      }
+      return;
+    }
+
+    // If schema defined explicetly
 
     const typeName = schemaSpec?.['type'] as string;
     if (typeName !== 'object' || options?.alwaysShowType) {
@@ -326,6 +339,8 @@ export class OpenApiParser {
     else if (schemaSpec['enum']) {
       this.doc.enumValues(schemaSpec['enum'] as string[]);
     }
+
+    this.doc.lineBreak();
   }
 
   private schemaNameByRef(ref: string) {

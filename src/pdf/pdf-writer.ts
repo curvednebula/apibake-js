@@ -135,7 +135,7 @@ export class PdfWriter {
     this.text(title, { font: this.style.font.main.bold, fontSize: 20 }, { align: 'center' });
     
     if (subtitle) {
-      this.lineBreak(0.5);
+      this.lineBreak(this.paraGap);
       this.text(subtitle, { fontSize: 14 }, { align: 'center' });
     }
     
@@ -161,9 +161,17 @@ export class PdfWriter {
     return this;
   }
 
+  nextLine(): PdfWriter {
+    return this.text('').lineBreak();
+  }
+
   lineBreak(n: number = 1): PdfWriter {
     this.doc.moveDown(n);
     return this;
+  }
+
+  paraBreak(): PdfWriter {
+    return this.lineBreak(this.paraGap);
   }
 
   text(str: string, style?: ITextStyle, options?: ITextOptions): PdfWriter {
@@ -173,6 +181,13 @@ export class PdfWriter {
       this.textImpl(str, options);
     }
     return this;
+  }
+
+  textRef(str: string, anchor?: string) {
+    this.text(str, { fillColor: this.style.color.highlight }, {
+      goTo: anchor ?? undefined, 
+      underline: anchor ? true : false
+    });
   }
 
   private textImpl(str: string, options?: ITextOptions): PdfWriter {
@@ -275,7 +290,7 @@ export class PdfWriter {
 
   description(str: string) {
     this.text(str, { fillColor: this.style.color.secondary });
-    this.lineBreak(0.5);
+    this.lineBreak(this.paraGap);
   }
 
   dataFields(dataFields: DataField[]) {
@@ -288,10 +303,7 @@ export class PdfWriter {
 
       if (fieldType) {
         this.text(': ', {}, { continued: true });
-        this.text(fieldType, { fillColor: this.style.color.highlight }, {
-          goTo: field.type?.anchor, 
-          underline: field.type?.anchor ? true : false
-        });
+        this.textRef(fieldType, field.type?.anchor);
       }
 
       if (field.description) {
@@ -328,6 +340,7 @@ export class PdfWriter {
     this.text(`Example "${name}":`, { font: this.style.font.main.bold });
     this.lineBreak(this.paraGap);
     this.text(body, { fillColor: this.style.color.secondary, fontSize: this.style.font.baseSize - 2, font: this.style.font.mono.bold });
+    this.lineBreak(this.paraGap);
   }
 
   enumValues(values: string[]) {
