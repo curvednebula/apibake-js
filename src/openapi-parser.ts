@@ -184,16 +184,16 @@ export class OpenApiParser {
       Object.entries(contentSpec).forEach(([contentType, contentSpec]) => {
         const schema = contentSpec['schema'] as ApiSpec;
         if (schema) {
-          this.doc.contentType(contentType, true);
+          this.doc.contentType(contentType, { lineContinues: true });
           this.parseSchema(schema, { alwaysShowType: true, lineContinues: true });
           emptyBody = false;
         }
         this.parseExamples(contentSpec['examples'] as ApiSpec);
       });
     }
-    // if (emptyBody) {
-    //   this.doc.para('Empty body.');
-    // }
+    if (emptyBody) {
+      // this.doc.para('Empty body.');
+    }
     this.doc.paraBreak();
   }
 
@@ -314,6 +314,9 @@ export class OpenApiParser {
       const foundRef = this.spec['components']?.['schemas']?.[ref.schemaName] as ApiSpec;
       if (foundRef) {
         this.doc.textRef(ref.text, ref.anchor);
+        if (options?.lineContinues) {
+          this.doc.paraBreak();
+        }
         this.parseSchema(foundRef);
       } else {
         this.doc.textRef(ref.text, ref.anchor);

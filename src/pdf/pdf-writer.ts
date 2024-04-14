@@ -318,9 +318,9 @@ export class PdfWriter {
     });
   }
 
-  contentType(contentType: string, lineContinues: boolean = true) {
+  contentType(contentType: string, options?: { lineContinues?: boolean }) {
     this.text('Content: ', {}, { continued: true });
-    this.text(contentType, { fillColor: this.style.color.highlight }, { continued: lineContinues });
+    this.text(contentType, { fillColor: this.style.color.highlight }, { continued: options?.lineContinues });
   }
 
   schemaType(typeName: string) {
