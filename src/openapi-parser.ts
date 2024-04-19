@@ -89,6 +89,8 @@ export class OpenApiParser {
     this.doc.newSection(this.sectionName);
     this.doc.header(this.firstHeaderLevel, this.sectionName);
 
+    this.parseInfo(this.spec);
+
     const paths = this.spec['paths'] as Record<string, any>;
 
     if (paths && Object.entries(paths).length > 0) {
@@ -115,6 +117,90 @@ export class OpenApiParser {
       this.parseSchemas(this.schemas);
     }
     this.doc.finish();
+  }
+
+  private parseInfo(infoSpec: ApiSpec) {
+    if("info" in infoSpec) {
+      Object.entries(infoSpec['info']).forEach(([key, value]) => log(` INFO: ${key}  ${value}`));
+
+      this.doc.header(1, infoSpec['info']['title']);
+      this.doc.indentStart();
+      this.doc.para(infoSpec['info']['description']);
+      this.doc.indentEnd();
+      this.doc.lineBreak();
+
+      if("termsOfService" in infoSpec['info']) {
+        this.doc.header(2, "Terms of service");
+        this.doc.indentStart();
+        this.doc.para(infoSpec['info']['termsOfService']);
+        this.doc.indentEnd();
+        this.doc.lineBreak();
+      }
+
+      if("version" in infoSpec['info']) {
+        this.doc.header(2, "Version");
+        this.doc.indentStart();
+        this.doc.para(infoSpec['info']['version']);
+        this.doc.indentEnd();
+        this.doc.lineBreak();
+      }
+
+      if("license" in infoSpec['info']) {
+        this.doc.header(2, "License");
+        this.doc.indentStart();
+
+        // if it is an object, presume that is an OpenAPI License Object
+        if(typeof infoSpec['info']['license'] === 'object') {
+          this.doc.para(infoSpec['info']['license']['name']);
+          this.doc.para(infoSpec['info']['license']['version']);
+        } else {
+          this.doc.para(infoSpec['info']['license'] as string);
+        }
+
+        this.doc.indentEnd();
+        this.doc.lineBreak();
+      }
+
+      if("contact" in infoSpec['info']) {
+        this.doc.header(2, "Contact");
+        this.doc.indentStart();
+
+        // if it is an object, presume that is an OpenAPI Contact Object
+        if(typeof infoSpec['info']['contact'] === 'object') {
+          this.doc.para(infoSpec['info']['contact']['name']);        
+          this.doc.para(infoSpec['info']['contact']['url']);
+          this.doc.para(infoSpec['info']['contact']['email']);
+        } else {
+          this.doc.para(infoSpec['info']['contact'] as string);
+        }
+
+        this.doc.indentEnd();
+        this.doc.lineBreak();
+      }
+
+      const processedEntries = ["title", "description", "termsOfService", "version", "license", "contact"];
+
+      Object.entries(infoSpec['info']).forEach(([key, value]) => {
+        if(!processedEntries.includes(key)) {
+
+          // exclude objects and null values
+          if(value === null || typeof value === 'function' || typeof value === 'object') {
+            return;
+          }
+
+          this.doc.header(2, key);
+          this.doc.indentStart();
+          this.doc.para(value as string);
+          this.doc.indentEnd();
+          this.doc.lineBreak();
+        }
+      });
+      
+      this.doc.lineBreak(3);
+
+    } else {
+      log(` No info found`);
+    }
   }
 
   private parsePath(path: string, pathSpec: ApiSpec) {
