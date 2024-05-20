@@ -51,10 +51,11 @@ class OpenApiParser {
         this.mergeSchemasInOneSection = mergeSchemasInOneSection;
         this.firstHeaderLevel = 0;
         this.spec = {}; // open api spec being processed
+        this.sectionName = '';
         this.schemas = {};
     }
     parse(apiSpec, sectionName) {
-        var _a, _b;
+        var _a, _b, _c;
         this.spec = apiSpec;
         const openapiVer = (_a = this.spec['openapi']) !== null && _a !== void 0 ? _a : this.spec['swagger'];
         ;
@@ -64,7 +65,7 @@ class OpenApiParser {
         if (openapiVer.startsWith('1') || openapiVer.startsWith('2')) {
             throw Error(`Not supported OpenAPI version: ${openapiVer}, supported: 3.0.0+.`);
         }
-        this.sectionName = sectionName;
+        this.sectionName = (_b = this.spec['info']['title']) !== null && _b !== void 0 ? _b : sectionName;
         this.doc.newSection(this.sectionName);
         this.doc.header(this.firstHeaderLevel, this.sectionName);
         this.parseInfo(this.spec);
@@ -75,7 +76,7 @@ class OpenApiParser {
                 this.parsePath(key, value);
             });
         }
-        const schemas = (_b = this.spec['components']) === null || _b === void 0 ? void 0 : _b['schemas'];
+        const schemas = (_c = this.spec['components']) === null || _c === void 0 ? void 0 : _c['schemas'];
         if (schemas && Object.entries(schemas).length > 0) {
             if (this.mergeSchemasInOneSection) {
                 this.saveSchemasToParseLater(schemas);
@@ -93,31 +94,35 @@ class OpenApiParser {
         this.doc.finish();
     }
     parseInfo(infoSpec) {
-        if ("info" in infoSpec) {
-            Object.entries(infoSpec['info']).forEach(([key, value]) => (0, logger_1.log)(` INFO: ${key}  ${value}`));
-            this.doc.header(1, infoSpec['info']['title']);
-            this.doc.indentStart();
-            this.doc.para(infoSpec['info']['description']);
-            this.doc.indentEnd();
-            this.doc.lineBreak();
+        const objectContainsOrString = (obj, fields) => {
+            return typeof obj === 'string' || typeof obj === 'object' && fields.some(field => field in obj);
+        };
+        if (infoSpec['info']) {
+            (0, logger_1.log)(`File info:`);
+            Object.entries(infoSpec['info']).forEach(([key, value]) => (0, logger_1.log)(` - ${key}: ${value}`));
+            this.doc.header(1, 'Overview');
+            if (infoSpec['info']['description']) {
+                this.doc.indentStart();
+                this.doc.para((0, string_utils_1.sanitizeDescription)(infoSpec['info']['description']));
+                this.doc.lineBreak();
+            }
             if ("termsOfService" in infoSpec['info']) {
-                this.doc.header(2, "Terms of service");
+                this.doc.subHeader('Terms of service');
                 this.doc.indentStart();
                 this.doc.para(infoSpec['info']['termsOfService']);
                 this.doc.indentEnd();
                 this.doc.lineBreak();
             }
             if ("version" in infoSpec['info']) {
-                this.doc.header(2, "Version");
+                this.doc.subHeader('Version');
                 this.doc.indentStart();
                 this.doc.para(infoSpec['info']['version']);
                 this.doc.indentEnd();
                 this.doc.lineBreak();
             }
             if ("license" in infoSpec['info']) {
-                this.doc.header(2, "License");
+                this.doc.subHeader('License');
                 this.doc.indentStart();
-                // if it is an object, presume that is an OpenAPI License Object
                 if (typeof infoSpec['info']['license'] === 'object') {
                     this.doc.para(infoSpec['info']['license']['name']);
                     this.doc.para(infoSpec['info']['license']['version']);
@@ -128,39 +133,33 @@ class OpenApiParser {
                 this.doc.indentEnd();
                 this.doc.lineBreak();
             }
-            if ("contact" in infoSpec['info']) {
-                this.doc.header(2, "Contact");
+            if (objectContainsOrString(infoSpec['info']['contact'], ['name', 'url', 'email'])) {
+                this.doc.subHeader('Contact');
                 this.doc.indentStart();
-                // if it is an object, presume that is an OpenAPI Contact Object
                 if (typeof infoSpec['info']['contact'] === 'object') {
                     this.doc.para(infoSpec['info']['contact']['name']);
                     this.doc.para(infoSpec['info']['contact']['url']);
                     this.doc.para(infoSpec['info']['contact']['email']);
                 }
-                else {
+                else if (typeof infoSpec['info']['contact'] === 'string') {
                     this.doc.para(infoSpec['info']['contact']);
                 }
                 this.doc.indentEnd();
                 this.doc.lineBreak();
             }
+            // add other info fields if any
             const processedEntries = ["title", "description", "termsOfService", "version", "license", "contact"];
             Object.entries(infoSpec['info']).forEach(([key, value]) => {
-                if (!processedEntries.includes(key)) {
-                    // exclude objects and null values
-                    if (value === null || typeof value === 'function' || typeof value === 'object') {
-                        return;
-                    }
-                    this.doc.header(2, key);
-                    this.doc.indentStart();
-                    this.doc.para(value);
-                    this.doc.indentEnd();
-                    this.doc.lineBreak();
+                if (processedEntries.includes(key) || value === null || typeof value !== 'string') {
+                    return;
                 }
+                this.doc.subHeader((0, string_utils_1.capitalizeFirst)(key));
+                this.doc.indentStart();
+                this.doc.para(value);
+                this.doc.indentEnd();
+                this.doc.lineBreak();
             });
-            this.doc.lineBreak(3);
-        }
-        else {
-            (0, logger_1.log)(` No info found`);
+            this.doc.lineBreak(2);
         }
     }
     parsePath(path, pathSpec) {

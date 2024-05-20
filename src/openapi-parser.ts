@@ -1,6 +1,6 @@
 import { errorLog, log } from './utils/logger';
 import { PdfWriter } from './pdf/pdf-writer';
-import { sanitizeDescription } from './utils/string-utils';
+import { capitalizeFirst, sanitizeDescription } from './utils/string-utils';
 
 export type ApiSpec = Record<string, any>;
 
@@ -64,7 +64,7 @@ export class OpenApiParser {
   private firstHeaderLevel = 0;
 
   private spec: ApiSpec = {}; // open api spec being processed
-  private sectionName?: string;
+  private sectionName: string = '';
 
   private schemas: ApiSpec = {};
 
@@ -85,7 +85,8 @@ export class OpenApiParser {
       throw Error(`Not supported OpenAPI version: ${openapiVer}, supported: 3.0.0+.`);
     }
 
-    this.sectionName = sectionName;
+    this.sectionName = this.spec['info']['title'] ?? sectionName;
+
     this.doc.newSection(this.sectionName);
     this.doc.header(this.firstHeaderLevel, this.sectionName);
 
@@ -120,86 +121,82 @@ export class OpenApiParser {
   }
 
   private parseInfo(infoSpec: ApiSpec) {
-    if("info" in infoSpec) {
-      Object.entries(infoSpec['info']).forEach(([key, value]) => log(` INFO: ${key}  ${value}`));
+    const objectContainsOrString = (obj: any, fields: string[]): boolean => {
+      return typeof obj === 'string' || typeof obj === 'object' && fields.some(field => field in obj);
+    }
 
-      this.doc.header(1, infoSpec['info']['title']);
-      this.doc.indentStart();
-      this.doc.para(infoSpec['info']['description']);
-      this.doc.indentEnd();
-      this.doc.lineBreak();
+    if (infoSpec['info']) {
+      log(`File info:`);
+      Object.entries(infoSpec['info']).forEach(([key, value]) => log(` - ${key}: ${value}`));
 
-      if("termsOfService" in infoSpec['info']) {
-        this.doc.header(2, "Terms of service");
+      this.doc.header(1, 'Overview');
+
+      if (infoSpec['info']['description']) {
+        this.doc.indentStart();
+        this.doc.para(sanitizeDescription(infoSpec['info']['description']));
+        this.doc.lineBreak();
+      }
+
+      if ("termsOfService" in infoSpec['info']) {
+        this.doc.subHeader('Terms of service');
         this.doc.indentStart();
         this.doc.para(infoSpec['info']['termsOfService']);
         this.doc.indentEnd();
         this.doc.lineBreak();
       }
 
-      if("version" in infoSpec['info']) {
-        this.doc.header(2, "Version");
+      if ("version" in infoSpec['info']) {
+        this.doc.subHeader('Version');
         this.doc.indentStart();
         this.doc.para(infoSpec['info']['version']);
         this.doc.indentEnd();
         this.doc.lineBreak();
       }
 
-      if("license" in infoSpec['info']) {
-        this.doc.header(2, "License");
+      if ("license" in infoSpec['info']) {
+        this.doc.subHeader('License');
         this.doc.indentStart();
 
-        // if it is an object, presume that is an OpenAPI License Object
         if(typeof infoSpec['info']['license'] === 'object') {
           this.doc.para(infoSpec['info']['license']['name']);
           this.doc.para(infoSpec['info']['license']['version']);
         } else {
           this.doc.para(infoSpec['info']['license'] as string);
         }
-
         this.doc.indentEnd();
         this.doc.lineBreak();
       }
 
-      if("contact" in infoSpec['info']) {
-        this.doc.header(2, "Contact");
+      if (objectContainsOrString(infoSpec['info']['contact'], ['name', 'url', 'email'])) {
+        this.doc.subHeader('Contact');
         this.doc.indentStart();
 
-        // if it is an object, presume that is an OpenAPI Contact Object
-        if(typeof infoSpec['info']['contact'] === 'object') {
+        if (typeof infoSpec['info']['contact'] === 'object') {
           this.doc.para(infoSpec['info']['contact']['name']);        
           this.doc.para(infoSpec['info']['contact']['url']);
           this.doc.para(infoSpec['info']['contact']['email']);
-        } else {
+        } else if (typeof infoSpec['info']['contact'] === 'string') {
           this.doc.para(infoSpec['info']['contact'] as string);
         }
-
         this.doc.indentEnd();
         this.doc.lineBreak();
       }
 
+      // add other info fields if any
       const processedEntries = ["title", "description", "termsOfService", "version", "license", "contact"];
 
       Object.entries(infoSpec['info']).forEach(([key, value]) => {
-        if(!processedEntries.includes(key)) {
-
-          // exclude objects and null values
-          if(value === null || typeof value === 'function' || typeof value === 'object') {
-            return;
-          }
-
-          this.doc.header(2, key);
-          this.doc.indentStart();
-          this.doc.para(value as string);
-          this.doc.indentEnd();
-          this.doc.lineBreak();
+        if(processedEntries.includes(key) || value === null || typeof value !== 'string') {
+          return;
         }
+        this.doc.subHeader(capitalizeFirst(key));
+        this.doc.indentStart();
+        this.doc.para(value as string);
+        this.doc.indentEnd();
+        this.doc.lineBreak();
       });
       
-      this.doc.lineBreak(3);
-
-    } else {
-      log(` No info found`);
+      this.doc.lineBreak(2);
     }
   }
 

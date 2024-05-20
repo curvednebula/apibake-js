@@ -2,7 +2,7 @@
   "openapi": "3.0.0",
   "info": {
     "version": "1.0.0",
-    "title": "Swagger Petstore",
+    "title": "Petstore Expanded Example",
     "description": "A sample API that uses a petstore as an example to demonstrate features in the OpenAPI 3.0 specification",
     "termsOfService": "http://swagger.io/terms/",
     "contact": {
@@ -201,9 +201,7 @@
           },
           {
             "type": "object",
-            "required": [
-              "id"
-            ],
+            "required": ["id"],
             "properties": {
               "id": {
                 "type": "integer",
@@ -215,9 +213,7 @@
       },
       "NewPet": {
         "type": "object",
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "properties": {
           "name": {
             "type": "string"
@@ -229,10 +225,7 @@
       },
       "Error": {
         "type": "object",
-        "required": [
-          "code",
-          "message"
-        ],
+        "required": ["code", "message"],
         "properties": {
           "code": {
             "type": "integer",

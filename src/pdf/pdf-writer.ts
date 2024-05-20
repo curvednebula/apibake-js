@@ -277,7 +277,7 @@ export class PdfWriter {
 
   subHeader(str: string) {
     this.withStyle({ fillColor: this.style.color.subHeaders, font: this.style.font.main.bold, fontSize: this.style.font.baseSize }, () => {
-      this.text(str, );
+      this.text(str);
       this.lineBreak(this.headerGap);
     });
   }
