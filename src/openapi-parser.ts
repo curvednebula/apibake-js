@@ -195,8 +195,6 @@ export class OpenApiParser {
         this.doc.indentEnd();
         this.doc.lineBreak();
       });
-      
-      this.doc.lineBreak(2);
     }
   }
 
