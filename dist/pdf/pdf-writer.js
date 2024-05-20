@@ -97,7 +97,7 @@ class PdfWriter {
         this.doc.y = this.doc.page.height * 0.3;
         this.text(title, { font: this.style.font.main.bold, fontSize: 20 }, { align: 'center' });
         if (subtitle) {
-            this.lineBreak(0.5);
+            this.lineBreak(this.paraGap);
             this.text(subtitle, { fontSize: 14 }, { align: 'center' });
         }
         if (date) {
@@ -118,9 +118,15 @@ class PdfWriter {
         this.popStyle();
         return this;
     }
+    nextLine() {
+        return this.text('').lineBreak();
+    }
     lineBreak(n = 1) {
         this.doc.moveDown(n);
         return this;
+    }
+    paraBreak() {
+        return this.lineBreak(this.paraGap);
     }
     text(str, style, options) {
         if (style && Object.keys(style).length > 0) {
@@ -130,6 +136,12 @@ class PdfWriter {
             this.textImpl(str, options);
         }
         return this;
+    }
+    textRef(str, anchor) {
+        this.text(str, { fillColor: this.style.color.highlight }, {
+            goTo: anchor !== null && anchor !== void 0 ? anchor : undefined,
+            underline: anchor ? true : false
+        });
     }
     textImpl(str, options) {
         var _a, _b;
@@ -222,21 +234,18 @@ class PdfWriter {
     }
     description(str) {
         this.text(str, { fillColor: this.style.color.secondary });
-        this.lineBreak(0.5);
+        this.lineBreak(this.paraGap);
     }
     dataFields(dataFields) {
         const origX = this.doc.x;
         dataFields.forEach((field) => {
-            var _a, _b, _c, _d, _e;
+            var _a, _b, _c, _d;
             const fieldName = `${field.name}${((_a = field.required) !== null && _a !== void 0 ? _a : true) ? '' : '?'}`;
             const fieldType = ((_b = field.type) === null || _b === void 0 ? void 0 : _b.text) ? `${(_c = field.type) === null || _c === void 0 ? void 0 : _c.text};` : undefined;
             this.text(fieldName, {}, { continued: fieldType ? true : false });
             if (fieldType) {
                 this.text(': ', {}, { continued: true });
-                this.text(fieldType, { fillColor: this.style.color.highlight }, {
-                    goTo: (_d = field.type) === null || _d === void 0 ? void 0 : _d.anchor,
-                    underline: ((_e = field.type) === null || _e === void 0 ? void 0 : _e.anchor) ? true : false
-                });
+                this.textRef(fieldType, (_d = field.type) === null || _d === void 0 ? void 0 : _d.anchor);
             }
             if (field.description) {
                 this.doc.moveUp();
@@ -249,14 +258,13 @@ class PdfWriter {
             this.doc.x = origX;
         });
     }
-    schemaType(typeName, contentType) {
-        if (contentType) {
-            this.text('Content: ', {}, { continued: true });
-            this.text(contentType, { fillColor: this.style.color.highlight }, { continued: true });
-            this.text(' | ', {}, { continued: true });
-        }
+    contentType(contentType, options) {
+        this.text('Content: ', {}, { continued: true });
+        this.text(contentType, { fillColor: this.style.color.highlight }, { continued: options === null || options === void 0 ? void 0 : options.lineContinues });
+    }
+    schemaType(typeName) {
         this.text('Type: ', {}, { continued: true });
-        this.text(typeName, { fillColor: this.style.color.highlight });
+        this.text(typeName !== null && typeName !== void 0 ? typeName : '-', { fillColor: this.style.color.highlight });
         this.lineBreak(this.paraGap);
     }
     objectSchema(dataFields) {
@@ -268,6 +276,7 @@ class PdfWriter {
         this.text(`Example "${name}":`, { font: this.style.font.main.bold });
         this.lineBreak(this.paraGap);
         this.text(body, { fillColor: this.style.color.secondary, fontSize: this.style.font.baseSize - 2, font: this.style.font.mono.bold });
+        this.lineBreak(this.paraGap);
     }
     enumValues(values) {
         this.text('Values: ');

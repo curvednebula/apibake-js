@@ -3,12 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.OpenApiParser = exports.DataField = exports.SchemaRef = void 0;
 const logger_1 = require("./utils/logger");
 const string_utils_1 = require("./utils/string-utils");
-class ApiSpecLeaf {
-    constructor(name, spec) {
-        this.name = name;
-        this.spec = spec;
-    }
-}
 class SchemaRef {
     constructor(text, schemaName, anchor, isArray = false) {
         this.text = text;
@@ -38,6 +32,19 @@ class DataField {
     }
 }
 exports.DataField = DataField;
+const allAnyOne = {
+    'allOf': { name: 'All of', connectWord: 'and' },
+    'anyOf': { name: 'Any of', connectWord: 'or' },
+    'oneOf': { name: 'One of', connectWord: 'or' },
+};
+function getFirstOf(spec, children) {
+    for (const child of children) {
+        if (spec[child]) {
+            return { key: child, value: spec[child] };
+        }
+    }
+    return undefined;
+}
 class OpenApiParser {
     constructor(doc, mergeSchemasInOneSection = false) {
         this.doc = doc;
@@ -60,6 +67,7 @@ class OpenApiParser {
         this.sectionName = sectionName;
         this.doc.newSection(this.sectionName);
         this.doc.header(this.firstHeaderLevel, this.sectionName);
+        this.parseInfo(this.spec);
         const paths = this.spec['paths'];
         if (paths && Object.entries(paths).length > 0) {
             (0, logger_1.log)('Endpoints:');
@@ -83,6 +91,77 @@ class OpenApiParser {
             this.parseSchemas(this.schemas);
         }
         this.doc.finish();
+    }
+    parseInfo(infoSpec) {
+        if ("info" in infoSpec) {
+            Object.entries(infoSpec['info']).forEach(([key, value]) => (0, logger_1.log)(` INFO: ${key}  ${value}`));
+            this.doc.header(1, infoSpec['info']['title']);
+            this.doc.indentStart();
+            this.doc.para(infoSpec['info']['description']);
+            this.doc.indentEnd();
+            this.doc.lineBreak();
+            if ("termsOfService" in infoSpec['info']) {
+                this.doc.header(2, "Terms of service");
+                this.doc.indentStart();
+                this.doc.para(infoSpec['info']['termsOfService']);
+                this.doc.indentEnd();
+                this.doc.lineBreak();
+            }
+            if ("version" in infoSpec['info']) {
+                this.doc.header(2, "Version");
+                this.doc.indentStart();
+                this.doc.para(infoSpec['info']['version']);
+                this.doc.indentEnd();
+                this.doc.lineBreak();
+            }
+            if ("license" in infoSpec['info']) {
+                this.doc.header(2, "License");
+                this.doc.indentStart();
+                // if it is an object, presume that is an OpenAPI License Object
+                if (typeof infoSpec['info']['license'] === 'object') {
+                    this.doc.para(infoSpec['info']['license']['name']);
+                    this.doc.para(infoSpec['info']['license']['version']);
+                }
+                else {
+                    this.doc.para(infoSpec['info']['license']);
+                }
+                this.doc.indentEnd();
+                this.doc.lineBreak();
+            }
+            if ("contact" in infoSpec['info']) {
+                this.doc.header(2, "Contact");
+                this.doc.indentStart();
+                // if it is an object, presume that is an OpenAPI Contact Object
+                if (typeof infoSpec['info']['contact'] === 'object') {
+                    this.doc.para(infoSpec['info']['contact']['name']);
+                    this.doc.para(infoSpec['info']['contact']['url']);
+                    this.doc.para(infoSpec['info']['contact']['email']);
+                }
+                else {
+                    this.doc.para(infoSpec['info']['contact']);
+                }
+                this.doc.indentEnd();
+                this.doc.lineBreak();
+            }
+            const processedEntries = ["title", "description", "termsOfService", "version", "license", "contact"];
+            Object.entries(infoSpec['info']).forEach(([key, value]) => {
+                if (!processedEntries.includes(key)) {
+                    // exclude objects and null values
+                    if (value === null || typeof value === 'function' || typeof value === 'object') {
+                        return;
+                    }
+                    this.doc.header(2, key);
+                    this.doc.indentStart();
+                    this.doc.para(value);
+                    this.doc.indentEnd();
+                    this.doc.lineBreak();
+                }
+            });
+            this.doc.lineBreak(3);
+        }
+        else {
+            (0, logger_1.log)(` No info found`);
+        }
     }
     parsePath(path, pathSpec) {
         Object.entries(pathSpec).forEach(([methodName, methodSpec]) => {
@@ -139,12 +218,10 @@ class OpenApiParser {
         let emptyBody = true;
         if (contentSpec) {
             Object.entries(contentSpec).forEach(([contentType, contentSpec]) => {
-                var _a, _b;
-                const schemaRef = contentSpec['schema'];
-                if (schemaRef) {
-                    const schema = this.parseSchemaRef(schemaRef);
-                    const schemaSpec = (_b = (_a = this.spec['components']) === null || _a === void 0 ? void 0 : _a['schemas']) === null || _b === void 0 ? void 0 : _b[schema.schemaName];
-                    this.parseSchema(schemaSpec, schema.text, contentType);
+                const schema = contentSpec['schema'];
+                if (schema) {
+                    this.doc.contentType(contentType, { lineContinues: true });
+                    this.parseSchema(schema, { alwaysShowType: true, lineContinues: true });
                     emptyBody = false;
                 }
                 this.parseExamples(contentSpec['examples']);
@@ -153,7 +230,7 @@ class OpenApiParser {
         if (emptyBody) {
             // this.doc.para('Empty body.');
         }
-        this.doc.lineBreak();
+        this.doc.paraBreak();
     }
     parseExamples(spec) {
         if (!spec) {
@@ -179,6 +256,42 @@ class OpenApiParser {
         });
     }
     parseSchemas(schemas) {
+        // Example:
+        // {
+        //   "Pet": {
+        //     "allOf": [
+        //       {
+        //         "$ref": "#/components/schemas/NewPet"
+        //       },
+        //       {
+        //         "type": "object",
+        //         "required": [
+        //           "id"
+        //         ],
+        //         "properties": {
+        //           "id": {
+        //             "type": "integer",
+        //             "format": "int64"
+        //           }
+        //         }
+        //       }
+        //     ]
+        //   },
+        //   "NewPet": {
+        //     "type": "object",
+        //     "required": [
+        //       "name"
+        //     ],
+        //     "properties": {
+        //       "name": {
+        //         "type": "string"
+        //       },
+        //       "tag": {
+        //         "type": "string"
+        //       }
+        //     }
+        //   },
+        // }
         (0, logger_1.log)('Schemas:');
         const headerLevel = this.mergeSchemasInOneSection ? this.firstHeaderLevel : this.firstHeaderLevel + 1;
         this.doc.newSection('Schemas');
@@ -190,14 +303,56 @@ class OpenApiParser {
             this.doc.lineBreak(2);
         });
     }
-    parseSchema(schemaSpec, name, contentType) {
-        const typeName = name !== null && name !== void 0 ? name : schemaSpec === null || schemaSpec === void 0 ? void 0 : schemaSpec['type'];
-        if (typeName !== 'object') {
-            this.doc.schemaType(typeName, contentType);
-        }
+    parseSchema(schemaSpec, options) {
+        var _a, _b;
         if (!schemaSpec) {
             return;
         }
+        // If schema is aggregate: allOf, anyOf, oneOf
+        const found = getFirstOf(schemaSpec, Object.keys(allAnyOne));
+        if ((found === null || found === void 0 ? void 0 : found.value) && Array.isArray(found.value)) {
+            if (options === null || options === void 0 ? void 0 : options.lineContinues) {
+                this.doc.nextLine();
+                this.doc.paraBreak();
+            }
+            const aggregate = allAnyOne[found.key];
+            this.doc.description(`${aggregate.name}:`);
+            // TODO: for allOf combine schemas into a single object
+            found.value.forEach((it, index, arr) => {
+                this.doc.indentStart();
+                this.parseSchema(it);
+                this.doc.indentEnd();
+                if (index < arr.length - 1) {
+                    this.doc.description(aggregate.connectWord);
+                }
+            });
+            return;
+        }
+        // If schema is a reference
+        if (options === null || options === void 0 ? void 0 : options.lineContinues) {
+            this.doc.text(' | ', {}, { continued: true });
+        }
+        const ref = this.parseSchemaRef(schemaSpec);
+        if (ref.schemaName && ref.anchor) {
+            const foundRef = (_b = (_a = this.spec['components']) === null || _a === void 0 ? void 0 : _a['schemas']) === null || _b === void 0 ? void 0 : _b[ref.schemaName];
+            if (foundRef) {
+                this.doc.textRef(ref.text, ref.anchor);
+                if (options === null || options === void 0 ? void 0 : options.lineContinues) {
+                    this.doc.paraBreak();
+                }
+                this.parseSchema(foundRef);
+            }
+            else {
+                this.doc.textRef(ref.text, ref.anchor);
+            }
+            return;
+        }
+        else {
+            if (!ref.isUndefined() && ref.text !== 'object') {
+                this.doc.text(ref.text);
+            }
+        }
+        // If schema defined explicetly
         const properties = schemaSpec['properties'];
         if (properties) {
             const required = schemaSpec['required'];
@@ -211,6 +366,7 @@ class OpenApiParser {
         else if (schemaSpec['enum']) {
             this.doc.enumValues(schemaSpec['enum']);
         }
+        this.doc.paraBreak();
     }
     schemaNameByRef(ref) {
         const refPath = '#/components/schemas/';
@@ -225,7 +381,7 @@ class OpenApiParser {
         return ((_b = (_a = this.spec['components']) === null || _a === void 0 ? void 0 : _a['schemas']) === null || _b === void 0 ? void 0 : _b[name]) ? true : false;
     }
     schemaAnchor(schemaName) {
-        return this.mergeSchemasInOneSection ? `schemas: ${schemaName}` : `${this.sectionName}: ${schemaName}`;
+        return this.mergeSchemasInOneSection ? `schemas:${schemaName}` : `${this.sectionName}:${schemaName}`;
     }
     parseSchemaRef(schemaRef) {
         if (schemaRef['type']) {
@@ -240,6 +396,9 @@ class OpenApiParser {
         else if (schemaRef['\$ref']) {
             const schemaName = this.schemaNameByRef(schemaRef['\$ref']);
             const anchor = this.schemaDefinitionExists(schemaName) ? this.schemaAnchor(schemaName) : undefined;
+            if (!anchor) {
+                (0, logger_1.log)(`! No definition for ref: ${schemaRef['\$ref']}`);
+            }
             return new SchemaRef(schemaName, schemaName, anchor);
         }
         return SchemaRef.undefined();
@@ -251,24 +410,16 @@ class OpenApiParser {
                 typeRef = this.parseSchemaRef(paramSpec['schema']);
             }
             if (typeRef === undefined || typeRef.isUndefined()) {
-                const leaf = this.getFirstOf(paramSpec, ['anyOf', 'allOf', 'oneOf']);
+                const leaf = getFirstOf(paramSpec, Object.keys(allAnyOne));
                 // TODO: parse entire array of possible schemas
-                if (leaf === null || leaf === void 0 ? void 0 : leaf.spec[0]) {
-                    typeRef = this.parseSchemaRef(leaf === null || leaf === void 0 ? void 0 : leaf.spec[0]);
+                if (leaf === null || leaf === void 0 ? void 0 : leaf.value[0]) {
+                    typeRef = this.parseSchemaRef(leaf === null || leaf === void 0 ? void 0 : leaf.value[0]);
                 }
             }
             this.doc.dataFields([
                 new DataField(paramSpec['name'], typeRef, paramSpec['description'], paramSpec['required'])
             ]);
         }
-    }
-    getFirstOf(spec, children) {
-        for (const child of children) {
-            if (spec[child]) {
-                return new ApiSpecLeaf(child, spec[child]);
-            }
-        }
-        return undefined;
     }
 }
 exports.OpenApiParser = OpenApiParser;
