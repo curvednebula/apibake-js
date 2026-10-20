@@ -69,6 +69,7 @@ class OpenApiParser {
         this.doc.newSection(this.sectionName);
         this.doc.header(this.firstHeaderLevel, this.sectionName);
         this.parseInfo(this.spec);
+        this.parseServers(this.spec);
         const paths = this.spec['paths'];
         if (paths && Object.entries(paths).length > 0) {
             (0, logger_1.log)('Endpoints:');
@@ -159,8 +160,49 @@ class OpenApiParser {
                 this.doc.indentEnd();
                 this.doc.lineBreak();
             });
-            this.doc.lineBreak(2);
         }
+    }
+    parseServers(spec) {
+        const servers = spec['servers'];
+        if (!Array.isArray(servers) || servers.length === 0) {
+            return;
+        }
+        (0, logger_1.log)('Servers:');
+        this.doc.header(1, 'Servers');
+        servers.forEach((server) => {
+            (0, logger_1.log)(` - ${server['url']}`);
+            this.doc.indentStart();
+            this.doc.para(server['url']);
+            if (server['description']) {
+                this.doc.description((0, string_utils_1.sanitizeDescription)(server['description']));
+            }
+            const variables = server['variables'];
+            if (variables && Object.entries(variables).length > 0) {
+                this.doc.subHeader('Variables');
+                this.doc.indentStart();
+                Object.entries(variables).forEach(([name, variable]) => {
+                    const hasDefault = variable['default'] !== undefined;
+                    this.doc.text(name, {}, { continued: hasDefault });
+                    if (hasDefault) {
+                        this.doc.text(` (default: ${variable['default']})`);
+                    }
+                    else {
+                        this.doc.text('');
+                    }
+                    if (Array.isArray(variable['enum'])) {
+                        this.doc.enumValues(variable['enum']);
+                        this.doc.paraBreak();
+                    }
+                    if (variable['description']) {
+                        this.doc.description((0, string_utils_1.sanitizeDescription)(variable['description']));
+                    }
+                });
+                this.doc.indentEnd();
+            }
+            this.doc.indentEnd();
+            this.doc.lineBreak();
+        });
+        this.doc.lineBreak(2);
     }
     parsePath(path, pathSpec) {
         Object.entries(pathSpec).forEach(([methodName, methodSpec]) => {
